@@ -34,7 +34,7 @@ main (int argc, char **argv)
   int yday;
   int windowSize;
   int windowOverlap;
-  const char *delims = "/.~";
+  const char *delims = ".";
 
   /* Simplistic argument parsing */
   if (argc != 4)
@@ -46,14 +46,15 @@ main (int argc, char **argv)
   int len    = strlen (mseedfile);
   char *temp = (char *)malloc (sizeof (char) * (len + 1));
   strncpy (temp, mseedfile, len);
-  temp[len]   = '\0';
-  int counter = 0;
-  temp        = strtok (temp, delims);
-  while (temp != NULL)
+  temp[len] = '\0';
+  int l     = 0;
+  char *ssc = strstr (temp, "/");
+  do
   {
-    printf ("%s\n", temp);
-    temp = strtok (NULL, delims);
-  }
+    l    = strlen (ssc) + 1;
+    temp = &temp[strlen (temp) - l + 2];
+    ssc  = strstr (temp, "/");
+  } while (ssc);
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
 
@@ -66,10 +67,18 @@ main (int argc, char **argv)
   /*int hour, minute, second;*/
 
   printf ("input file name: %s\n", mseedfile);
+  printf ("base name of input file: %s\n", temp);
   printf ("window size: %d\n", windowSize);
   printf ("window overlap: %d\n", windowOverlap);
 
-  free (temp);
+  /* tokenize the base name of input file test */
+  char *token;
+  token = strtok(token, delims);
+  while(token != NULL)
+  {
+    printf("%s\n", token);
+    token = strtok(NULL, delims);
+  }
 
   return 0;
 }
