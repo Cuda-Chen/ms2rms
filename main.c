@@ -1,11 +1,12 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "libmseed.h"
 
-#include "standard_deviation.h"
+/*#include "standard_deviation.h"*/
 
 int
 main (int argc, char **argv)
@@ -29,13 +30,32 @@ main (int argc, char **argv)
   int col;
   void *sptr;
 
+  int year;
+  int yday;
+  int windowSize;
+  int windowOverlap;
+  const char *delims = "/.~";
+
   /* Simplistic argument parsing */
   if (argc != 4)
   {
-    ms_log (2, "Usage: ./ms2rms <mseedfile> <tine window size> <window overlap>\n");
+    ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
     return -1;
   }
-  mseedfile     = argv[1];
+  mseedfile  = argv[1];
+  int len    = strlen (mseedfile);
+  char *temp = (char *)malloc (sizeof (char) * (len + 1));
+  strncpy (temp, mseedfile, len);
+  temp[len]   = '\0';
+  int counter = 0;
+  temp        = strtok (temp, delims);
+  while (temp != NULL)
+  {
+    printf ("%s\n", temp);
+    temp = strtok (NULL, delims);
+  }
+  windowSize    = atoi (argv[2]);
+  windowOverlap = atoi (argv[3]);
 
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
@@ -43,5 +63,13 @@ main (int argc, char **argv)
   /* Set bit flag to build a record list */
   flags |= MSF_RECORDLIST;
 
-  int hour, minute, second;
+  /*int hour, minute, second;*/
+
+  printf ("input file name: %s\n", mseedfile);
+  printf ("window size: %d\n", windowSize);
+  printf ("window overlap: %d\n", windowOverlap);
+
+  free (temp);
+
+  return 0;
 }

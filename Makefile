@@ -1,7 +1,7 @@
 DEBUG = 1
 
 CC = gcc
-EXEC = calculate_rms.out
+EXEC = ms2rms
 COMMON = -I/usr/local/include
 CFLAGS = -Wall
 LDFLAGS = -L/usr/local/lib 
