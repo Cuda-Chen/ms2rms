@@ -74,12 +74,19 @@ main (int argc, char **argv)
   printf ("window overlap: %d\n", windowOverlap);
 
   /* tokenize the base name of input file test */
-  char *token;
-  token = strtok(token, delims);
-  while(token != NULL)
+  char *ptrToken;
+  ptrToken = strtok(temp, delims);
+  char *tokens[5];
+  int i = 0;
+  while(ptrToken != NULL)
   {
-    printf("%s\n", token);
-    token = strtok(NULL, delims);
+    tokens[i++] = ptrToken;
+    ptrToken = strtok(NULL, delims);
+  }
+
+  for(i = 0; i < 5; i++)
+  {
+    printf("%s\n", tokens[i]);
   }
 
   return 0;
