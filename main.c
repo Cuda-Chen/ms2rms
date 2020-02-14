@@ -34,6 +34,8 @@ main (int argc, char **argv)
   int yday;
   int windowSize;
   int windowOverlap;
+  nstime_t windowSize_in_ns;
+  nstime_t windowOverlap_in_ns;
   const char *delims = ".";
 
   /* Simplistic argument parsing */
@@ -55,6 +57,8 @@ main (int argc, char **argv)
     temp = &temp[strlen (temp) - l + 2];
     ssc  = strstr (temp, "/");
   } while (ssc);
+  /* Convert windowSize and windowOverlap to HH:MM:SS
+   * format so that ms_time2nstime() will like it */
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
 
@@ -63,8 +67,6 @@ main (int argc, char **argv)
 
   /* Set bit flag to build a record list */
   flags |= MSF_RECORDLIST;
-
-  /*int hour, minute, second;*/
 
   printf ("input file name: %s\n", mseedfile);
   printf ("base name of input file: %s\n", temp);
