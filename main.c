@@ -21,10 +21,11 @@ main (int argc, char **argv)
   MS3Selections *selections = NULL;
 
   char *mseedfile = NULL;
+  char *selectionfile = NULL;
   char starttimestr[30];
   char endtimestr[30];
-  uint32_t flags  = 0;
-  int8_t verbose  = 0;
+  uint32_t flags = 0;
+  int8_t verbose = 0;
   size_t idx;
   int rv;
 
@@ -45,9 +46,9 @@ main (int argc, char **argv)
   const char *delims = ".";
 
   /* Simplistic argument parsing */
-  if (argc != 4)
+  if (argc != 5)
   {
-    ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
+    ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap> <selectionfile>\n");
     return -1;
   }
   mseedfile  = argv[1];
@@ -65,6 +66,13 @@ main (int argc, char **argv)
   } while (ssc);
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
+  selectionfile = argv[4];
+  /* Read data selections from specified file */
+  if (ms3_readselectionsfile (&selections, selectionfile) < 0)
+  {
+    ms_log (2, "Cannot read data selection file\n");
+    return -1;
+  }
 
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
@@ -95,17 +103,22 @@ main (int argc, char **argv)
 
   /* convert seconds to HH:MM:SS */
   int hour = 0, min = 0, sec = 0;
-  uint32_t nsec    = 0;
+  uint32_t nsec      = 0;
   nstime_t starttime = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
-                                     atoi (tokens[TOKENSIZE - 1]), hour, min, sec, nsec);
-  nstime_t endtime = ms_time2nstime( atoi(tokens[TOKENSIZE - 2]),
+                                       atoi (tokens[TOKENSIZE - 1]), hour, min, sec, nsec);
+  nstime_t endtime   = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
                                      atoi (tokens[TOKENSIZE - 1]), hour + 1, min, sec, nsec);
+  printf ("starttime: %s endtime: %s\n",
+          ms_nstime2timestr (starttime, starttimestr, SEEDORDINAL, NANO),
+          ms_nstime2timestr (endtime, endtimestr, SEEDORDINAL, NANO));
 
   /* Read all miniSEED into a trace list, limiting to time selections */
   /*rv = ms3_readtracelist_timewin (&mstl, mseedfile, NULL,
                                   starttime, endtime,
                                   0, flags, verbose);*/
-  rv = ms3_readtracelist(&mstl, mseedfile, NULL, 0, flags, verbose);
+  //rv = ms3_readtracelist (&mstl, mseedfile, NULL, 0, flags, verbose);
+    rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
+                                    selections, 0, flags, verbose);
   if (rv != MS_NOERROR)
   {
     ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr (rv));
