@@ -121,7 +121,7 @@ main (int argc, char **argv)
   testselection.sidpattern[1] = '\0';
   testselection.timewindows = &testselectime;
   testselection.next = NULL;
-  testselection.pubversion = 38;
+  testselection.pubversion = 0;
 
   testselectime.starttime = starttime;
   testselectime.endtime = endtime;
@@ -254,6 +254,8 @@ main (int argc, char **argv)
   /* Make sure everything is cleaned up */
   if (mstl)
     mstl3_free (&mstl, 0);
+  if (selections)
+    ms3_freeselections(selections);
 
   return 0;
 }
