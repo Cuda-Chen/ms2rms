@@ -74,6 +74,8 @@ main (int argc, char **argv)
     return -1;
   }
 
+  ms3_printselections(selections);
+
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
 
@@ -112,13 +114,28 @@ main (int argc, char **argv)
           ms_nstime2timestr (starttime, starttimestr, SEEDORDINAL, NANO),
           ms_nstime2timestr (endtime, endtimestr, SEEDORDINAL, NANO));
 
+  MS3Selections testselection;
+  MS3SelectTime testselectime;
+
+  testselection.sidpattern[0] = '*';
+  testselection.sidpattern[1] = '\0';
+  testselection.timewindows = &testselectime;
+  testselection.next = NULL;
+  testselection.pubversion = 38;
+
+  testselectime.starttime = starttime;
+  testselectime.endtime = endtime;
+  testselectime.next = NULL;
+
+  ms3_printselections(&testselection);
+
   /* Read all miniSEED into a trace list, limiting to time selections */
   /*rv = ms3_readtracelist_timewin (&mstl, mseedfile, NULL,
                                   starttime, endtime,
                                   0, flags, verbose);*/
   //rv = ms3_readtracelist (&mstl, mseedfile, NULL, 0, flags, verbose);
     rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
-                                    selections, 0, flags, verbose);
+                                    &testselection, 0, flags, verbose);
   if (rv != MS_NOERROR)
   {
     ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr (rv));
