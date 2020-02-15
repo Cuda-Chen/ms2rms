@@ -6,7 +6,11 @@
 
 #include "libmseed.h"
 
-/*#include "standard_deviation.h"*/
+#include "standard_deviation.h"
+
+#define SECONDINHOUR 3600
+#define SECONDINMINUTE 60
+#define TOKENSIZE 5
 
 int
 main (int argc, char **argv)
@@ -17,6 +21,8 @@ main (int argc, char **argv)
   MS3Selections *selections = NULL;
 
   char *mseedfile = NULL;
+  char starttimestr[30];
+  char endtimestr[30];
   uint32_t flags  = 0;
   int8_t verbose  = 0;
   size_t idx;
@@ -57,8 +63,6 @@ main (int argc, char **argv)
     temp = &temp[strlen (temp) - l + 2];
     ssc  = strstr (temp, "/");
   } while (ssc);
-  /* Convert windowSize and windowOverlap to HH:MM:SS
-   * format so that ms_time2nstime() will like it */
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
 
@@ -68,26 +72,158 @@ main (int argc, char **argv)
   /* Set bit flag to build a record list */
   flags |= MSF_RECORDLIST;
 
-  printf ("input file name: %s\n", mseedfile);
-  printf ("base name of input file: %s\n", temp);
-  printf ("window size: %d\n", windowSize);
-  printf ("window overlap: %d\n", windowOverlap);
-
   /* tokenize the base name of input file test */
   char *ptrToken;
-  ptrToken = strtok(temp, delims);
-  char *tokens[5];
+  ptrToken = strtok (temp, delims);
+  char *tokens[TOKENSIZE];
   int i = 0;
-  while(ptrToken != NULL)
+  while (ptrToken != NULL)
   {
     tokens[i++] = ptrToken;
-    ptrToken = strtok(NULL, delims);
+    ptrToken    = strtok (NULL, delims);
   }
 
-  for(i = 0; i < 5; i++)
+  /* Print the input params for debug use */
+  printf ("input file name: %s\n", mseedfile);
+  printf ("base name of input file: %s\n", temp);
+  printf ("window size: %d seconds\n", windowSize);
+  printf ("window overlap: %d percent\n", windowOverlap);
+  for (i = 0; i < TOKENSIZE; i++)
   {
-    printf("%s\n", tokens[i]);
+    printf ("%s\n", tokens[i]);
   }
+
+  /* convert seconds to HH:MM:SS */
+  int hour = 0, min = 0, sec = 0;
+  uint32_t nsec    = 0;
+  nstime_t starttime = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
+                                     atoi (tokens[TOKENSIZE - 1]), hour, min, sec, nsec);
+  nstime_t endtime = ms_time2nstime( atoi(tokens[TOKENSIZE - 2]),
+                                     atoi (tokens[TOKENSIZE - 1]), hour + 1, min, sec, nsec);
+
+  /* Read all miniSEED into a trace list, limiting to time selections */
+  /*rv = ms3_readtracelist_timewin (&mstl, mseedfile, NULL,
+                                  starttime, endtime,
+                                  0, flags, verbose);*/
+  rv = ms3_readtracelist(&mstl, mseedfile, NULL, 0, flags, verbose);
+  if (rv != MS_NOERROR)
+  {
+    ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr (rv));
+    return -1;
+  }
+
+  /* Traverse trace list structures and print summary information */
+  tid = mstl->traces;
+  while (tid)
+  {
+    /* allocate the data array of every trace */
+    double *data = NULL;
+    uint64_t dataSize;
+
+    ms_log (0, "TraceID for %s (%d), segments: %u\n",
+            tid->sid, tid->pubversion, tid->numsegments);
+
+    seg = tid->first;
+    while (seg)
+    {
+      if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY, NANO) ||
+          !ms_nstime2timestr (seg->endtime, endtimestr, ISOMONTHDAY, NANO))
+      {
+        ms_log (2, "Cannot create time strings\n");
+        starttimestr[0] = endtimestr[0] = '\0';
+      }
+
+      ms_log (0, "  Segment %s - %s, samples: %" PRId64 ", sample rate: %g\n",
+              starttimestr, endtimestr, seg->samplecnt, seg->samprate);
+
+      /* Unpack and print samples for this trace segment */
+      if (seg->recordlist && seg->recordlist->first)
+      {
+        /* Determine sample size and type based on encoding of first record */
+        ms_encoding_sizetype (seg->recordlist->first->msr->encoding, &samplesize, &sampletype);
+
+        /* Unpack data samples using record list.
+         * No data buffer is supplied, so it will be allocated and assigned to the segment.
+         * Alternatively, a user-specified data buffer can be provided here. */
+        unpacked = mstl3_unpack_recordlist (tid, seg, NULL, 0, verbose);
+
+        /* malloc the data array */
+        dataSize = seg->numsamples;
+        data     = (double *)malloc (sizeof (double) * dataSize);
+        if (data == NULL)
+        {
+          printf ("something wrong when malloc data array\n");
+          exit (-1);
+        }
+
+        if (unpacked != seg->samplecnt)
+        {
+          ms_log (2, "Cannot unpack samples for %s\n", tid->sid);
+        }
+        else
+        {
+          //ms_log (0, "DATA (%" PRId64 " samples) of type '%c':\n", seg->numsamples, seg->sampletype);
+
+          if (sampletype == 'a')
+          {
+            printf ("%*s",
+                    (seg->numsamples > INT_MAX) ? INT_MAX : (int)seg->numsamples,
+                    (char *)seg->datasamples);
+          }
+          else
+          {
+            lines = (unpacked / 6) + 1;
+
+            for (idx = 0, lineidx = 0; lineidx < lines; lineidx++)
+            {
+              for (col = 0; col < 6 && idx < seg->numsamples; col++)
+              {
+                sptr = (char *)seg->datasamples + (idx * samplesize);
+
+                if (sampletype == 'i')
+                {
+                  //ms_log (0, "%10d  ", *(int32_t *)sptr);
+                  data[idx] = (double)(*(int32_t *)sptr);
+                }
+                else if (sampletype == 'f')
+                {
+                  //ms_log (0, "%10.8g  ", *(float *)sptr);
+                  data[idx] = (double)(*(float *)sptr);
+                }
+                else if (sampletype == 'd')
+                {
+                  //ms_log (0, "%10.10g  ", *(double *)sptr);
+                  data[idx] = (double)(*(double *)sptr);
+                }
+
+                //printf("data[%zu]: %10.10g  ", idx, data[idx]);
+
+                idx++;
+              }
+              //ms_log (0, "\n");
+            }
+          }
+        }
+      }
+
+      seg = seg->next;
+    }
+
+    /* print the data samples of every trace */
+    printf ("data samples of this trace: %" PRId64 "\n", dataSize);
+    /* Calculate the RMS */
+    printf ("RMS of this trace: %lf\n", calculateSD (data, dataSize));
+    printf ("\n");
+
+    /* clean up the data array in the end of every trace */
+    free (data);
+
+    tid = tid->next;
+  }
+
+  /* Make sure everything is cleaned up */
+  if (mstl)
+    mstl3_free (&mstl, 0);
 
   return 0;
 }

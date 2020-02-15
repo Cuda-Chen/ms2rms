@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "standard_deviation.h"
 
