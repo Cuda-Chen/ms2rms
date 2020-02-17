@@ -20,7 +20,7 @@ main (int argc, char **argv)
   MS3TraceSeg *seg          = NULL;
   MS3Selections *selections = NULL;
 
-  char *mseedfile = NULL;
+  char *mseedfile     = NULL;
   char *selectionfile = NULL;
   char starttimestr[30];
   char endtimestr[30];
@@ -46,9 +46,9 @@ main (int argc, char **argv)
   const char *delims = ".";
 
   /* Simplistic argument parsing */
-  if (argc != 5)
+  if (argc != 4)
   {
-    ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap> <selectionfile>\n");
+    ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
     return -1;
   }
   mseedfile  = argv[1];
@@ -66,15 +66,11 @@ main (int argc, char **argv)
   } while (ssc);
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
-  selectionfile = argv[4];
-  /* Read data selections from specified file */
-  if (ms3_readselectionsfile (&selections, selectionfile) < 0)
+  if (windowSize <= 0 || windowOverlap <= 0)
   {
-    ms_log (2, "Cannot read data selection file\n");
+    printf ("This doesn't make sence because either time window size or wondow overlap is smaller than zero.\n");
     return -1;
   }
-
-  ms3_printselections(selections);
 
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
@@ -103,7 +99,7 @@ main (int argc, char **argv)
     printf ("%s\n", tokens[i]);
   }
 
-  /* convert seconds to HH:MM:SS */
+  /* Convert seconds to nstime_t */
   int hour = 0, min = 0, sec = 0;
   uint32_t nsec      = 0;
   nstime_t starttime = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
@@ -114,27 +110,24 @@ main (int argc, char **argv)
           ms_nstime2timestr (starttime, starttimestr, SEEDORDINAL, NANO),
           ms_nstime2timestr (endtime, endtimestr, SEEDORDINAL, NANO));
 
+  /* Create selection for time window */
   MS3Selections testselection;
   MS3SelectTime testselectime;
 
   testselection.sidpattern[0] = '*';
   testselection.sidpattern[1] = '\0';
-  testselection.timewindows = &testselectime;
-  testselection.next = NULL;
-  testselection.pubversion = 0;
+  testselection.timewindows   = &testselectime;
+  testselection.next          = NULL;
+  testselection.pubversion    = 0;
 
   testselectime.starttime = starttime;
-  testselectime.endtime = endtime;
-  testselectime.next = NULL;
+  testselectime.endtime   = endtime;
+  testselectime.next      = NULL;
 
-  ms3_printselections(&testselection);
+  ms3_printselections (&testselection);
 
   /* Read all miniSEED into a trace list, limiting to time selections */
-  /*rv = ms3_readtracelist_timewin (&mstl, mseedfile, NULL,
-                                  starttime, endtime,
-                                  0, flags, verbose);*/
-  //rv = ms3_readtracelist (&mstl, mseedfile, NULL, 0, flags, verbose);
-    rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
+  rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
                                     &testselection, 0, flags, verbose);
   if (rv != MS_NOERROR)
   {
@@ -255,7 +248,7 @@ main (int argc, char **argv)
   if (mstl)
     mstl3_free (&mstl, 0);
   if (selections)
-    ms3_freeselections(selections);
+    ms3_freeselections (selections);
 
   return 0;
 }
