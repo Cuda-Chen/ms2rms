@@ -102,7 +102,7 @@ equal than 100 will create infinite loop\n");
   int segments      = SECONDSINDAY / nextTimeStamp;
   printf ("num of segments: %d\n", segments);
   nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
-  char nextTimeStampStr[30];
+  char timeStampStr[30];
 
   /* Loop over the segments' count */
   nstime_t starttime = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
@@ -133,9 +133,13 @@ equal than 100 will create infinite loop\n");
 
     ms3_printselections (&testselection);
 
-    ms_nstime2timestr (starttime + nextTimeStamp_ns,
-                       nextTimeStampStr, ISOMONTHDAY, NANO);
-    printf ("Time stamp: %s\n", nextTimeStampStr);
+    if (!ms_nstime2timestr (starttime + (endtime - starttime) / 2,
+                       timeStampStr, ISOMONTHDAY, NANO))
+    {
+      ms_log (2, "Cannot create time stamp strings\n");
+      return -1;
+    }
+    printf ("Time stamp: %s\n", timeStampStr);
 
     /* Read all miniSEED into a trace list, limiting to time selections */
     rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
