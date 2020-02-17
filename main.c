@@ -8,8 +8,10 @@
 
 #include "standard_deviation.h"
 
-#define SECONDINHOUR 3600
-#define SECONDINMINUTE 60
+#define SECONDSINDAY 86400
+#define SECONDSINHOUR 3600
+#define SECONDSINMINUTE 60
+static nstime_t NSECS = 1000000000;
 #define TOKENSIZE 5
 
 int
@@ -66,9 +68,15 @@ main (int argc, char **argv)
   } while (ssc);
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
-  if (windowSize <= 0 || windowOverlap <= 0)
+  if (windowSize <= 0)
   {
-    printf ("This doesn't make sence because either time window size or wondow overlap is smaller than zero.\n");
+    printf ("This doesn't make sense because time window size is smaller than zero.\n");
+    return -1;
+  }
+  if (windowOverlap >= 100)
+  {
+    printf ("This doesn't make sense because if window overlap percentage is bigger of \
+equal than 100 will create infinite loop\n");
     return -1;
   }
 
@@ -99,13 +107,33 @@ main (int argc, char **argv)
     printf ("%s\n", tokens[i]);
   }
 
+  /* Calculate how many segments of this routine */
+  int nextTimeStamp = windowSize - (windowSize * windowOverlap / 100);
+  int segments      = SECONDSINDAY / nextTimeStamp;
+  nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
+
+  /* Loop over the segments' count */
+  nstime_t start = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
+                                   atoi (tokens[TOKENSIZE - 1]), 0, 0, 0, 0);
+  nstime_t end   = start + (nstime_t) (windowSize * NSECS);
+  for (i = 0; i < segments; i++)
+  {
+    printf ("starttime: %s endtime: %s\n",
+            ms_nstime2timestr (start, starttimestr, SEEDORDINAL, NANO),
+            ms_nstime2timestr (end, endtimestr, SEEDORDINAL, NANO));
+
+    start += nextTimeStamp_ns;
+    end += nextTimeStamp_ns;
+  }
+
   /* Convert seconds to nstime_t */
   int hour = 0, min = 0, sec = 0;
   uint32_t nsec      = 0;
   nstime_t starttime = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
                                        atoi (tokens[TOKENSIZE - 1]), hour, min, sec, nsec);
-  nstime_t endtime   = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
-                                     atoi (tokens[TOKENSIZE - 1]), hour + 1, min, sec, nsec);
+  /*nstime_t endtime   = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
+                                     atoi (tokens[TOKENSIZE - 1]), hour + 1, min, sec, nsec);*/
+  nstime_t endtime = starttime + (nstime_t) (windowSize * NSECS);
   printf ("starttime: %s endtime: %s\n",
           ms_nstime2timestr (starttime, starttimestr, SEEDORDINAL, NANO),
           ms_nstime2timestr (endtime, endtimestr, SEEDORDINAL, NANO));
