@@ -50,12 +50,12 @@ main (int argc, char **argv)
   temp[len] = '\0';
   int l     = 0;
   char *ssc = strstr (temp, "/");
-  do
+  while (ssc)
   {
     l    = strlen (ssc) + 1;
     temp = &temp[strlen (temp) - l + 2];
     ssc  = strstr (temp, "/");
-  } while (ssc);
+  }
   windowSize    = atoi (argv[2]);
   windowOverlap = atoi (argv[3]);
   if (windowSize <= 0)
@@ -134,7 +134,7 @@ equal than 100 will create infinite loop\n");
     ms3_printselections (&testselection);
 
     if (!ms_nstime2timestr (starttime + (endtime - starttime) / 2,
-                       timeStampStr, ISOMONTHDAY, NANO))
+                            timeStampStr, ISOMONTHDAY, NANO))
     {
       ms_log (2, "Cannot create time stamp strings\n");
       return -1;
