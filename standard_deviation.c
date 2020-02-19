@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -18,7 +19,7 @@ calculateSD (double *data, uint64_t dataSize)
   {
     SD += pow (data[i] - mean, 2);
   }
-  printf ("mean %lf\n", mean);
+  printf ("mean: %lf / %" PRId64 " = %lf\n", sum, dataSize, mean);
   return sqrt (SD / dataSize);
 }
 
@@ -26,5 +27,5 @@ void
 testCalculateSD ()
 {
   double test[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  printf ("RMS of test array: %lf\n", calculateSD (test, 10));
+  printf ("Standard deviation of test array: %lf\n", calculateSD (test, 10));
 }

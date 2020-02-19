@@ -161,12 +161,25 @@ equal than 100 will create infinite loop\n");
       seg            = tid->first;
       while (seg)
       {
-        total += seg->numsamples;
+        total += seg->samplecnt;
         seg = seg->next;
       }
       printf ("estimated samples of this trace: %" PRId64 "\n", total);
+      //total = 0;
 
       seg = tid->first;
+
+      /* malloc the data array */
+      dataSize = total;
+      data     = (double *)malloc (sizeof (double) * dataSize);
+      if (data == NULL)
+      {
+        printf ("something wrong when malloc data array\n");
+        exit (-1);
+      }
+      int64_t index = 0;
+      total         = 0;
+
       while (seg)
       {
         if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY, NANO) ||
@@ -189,15 +202,6 @@ equal than 100 will create infinite loop\n");
          * No data buffer is supplied, so it will be allocated and assigned to the segment.
          * Alternatively, a user-specified data buffer can be provided here. */
           unpacked = mstl3_unpack_recordlist (tid, seg, NULL, 0, verbose);
-
-          /* malloc the data array */
-          dataSize = seg->numsamples;
-          data     = (double *)malloc (sizeof (double) * dataSize);
-          if (data == NULL)
-          {
-            printf ("something wrong when malloc data array\n");
-            exit (-1);
-          }
 
           if (unpacked != seg->samplecnt)
           {
@@ -223,20 +227,19 @@ equal than 100 will create infinite loop\n");
 
                   if (sampletype == 'i')
                   {
-                    data[idx] = (double)(*(int32_t *)sptr);
+                    data[index] = (double)(*(int32_t *)sptr);
                   }
                   else if (sampletype == 'f')
                   {
-                    data[idx] = (double)(*(float *)sptr);
+                    data[index] = (double)(*(float *)sptr);
                   }
                   else if (sampletype == 'd')
                   {
-                    data[idx] = (double)(*(double *)sptr);
+                    data[index] = (double)(*(double *)sptr);
                   }
 
-                  //printf("data[%zu]: %10.10g  ", idx, data[idx]);
-
                   idx++;
+                  index++;
                 }
               }
             }
@@ -249,9 +252,9 @@ equal than 100 will create infinite loop\n");
 
       printf ("total samples of this trace: %" PRId64 "\n", total);
       /* print the data samples of every trace */
-      printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, idx);
+      printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
       /* Calculate the RMS */
-      printf ("RMS of this trace: %lf\n", calculateSD (data, dataSize));
+      printf ("Standard deviation of this trace: %lf\n", calculateSD (data, dataSize));
       printf ("\n");
 
       /* clean up the data array in the end of every trace */
