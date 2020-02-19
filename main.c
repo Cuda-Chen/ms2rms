@@ -35,7 +35,6 @@ main (int argc, char **argv)
 
   int windowSize;
   int windowOverlap;
-  const char *delims = ".";
 
   /* Simplistic argument parsing */
   if (argc != 4)
@@ -76,27 +75,6 @@ equal than 100 will create infinite loop\n");
   /* Set bit flag to build a record list */
   flags |= MSF_RECORDLIST;
 
-  /* tokenize the base name of input file test */
-  char *ptrToken;
-  ptrToken = strtok (temp, delims);
-  char *tokens[TOKENSIZE];
-  int i = 0;
-  while (ptrToken != NULL)
-  {
-    tokens[i++] = ptrToken;
-    ptrToken    = strtok (NULL, delims);
-  }
-
-  /* Print the input params for debug use */
-  printf ("input file name: %s\n", mseedfile);
-  printf ("base name of input file: %s\n", temp);
-  printf ("window size: %d seconds\n", windowSize);
-  printf ("window overlap: %d percent\n", windowOverlap);
-  for (i = 0; i < TOKENSIZE; i++)
-  {
-    printf ("%s\n", tokens[i]);
-  }
-
   /* Calculate how many segments of this routine */
   int nextTimeStamp = windowSize - (windowSize * windowOverlap / 100);
   int segments      = SECONDSINDAY / nextTimeStamp;
@@ -104,10 +82,21 @@ equal than 100 will create infinite loop\n");
   nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
   char timeStampStr[30];
 
-  /* Loop over the segments' count */
-  nstime_t starttime = ms_time2nstime (atoi (tokens[TOKENSIZE - 2]),
-                                       atoi (tokens[TOKENSIZE - 1]), 0, 0, 0, 0);
+  /* get the end time of the earliest record */
+  MS3Record *msr = 0;
+  ms3_readmsr (&msr, mseedfile, NULL, NULL, flags, verbose);
+  uint16_t year, yday;
+  uint8_t hour, min, sec;
+  uint32_t nsec;
+  ms_nstime2time (msr3_endtime (msr), &year, &yday, &hour, &min, &sec, &nsec);
+  printf ("end time of year and yday of the earliest record: %" PRId16 " %" PRId16 "\n", year, yday);
+  if (msr)
+    msr3_free (&msr);
+
+  /* Loop over the selected segments */
+  nstime_t starttime = ms_time2nstime (year, yday, 0, 0, 0, 0);
   nstime_t endtime   = starttime + (nstime_t) (windowSize * NSECS);
+  int i;
   for (i = 0; i < segments; i++)
   {
     printf ("index: %d\n", i);
@@ -158,8 +147,23 @@ equal than 100 will create infinite loop\n");
       double *data = NULL;
       uint64_t dataSize;
 
-      ms_log (0, "TraceID for %s (%d), segments: %u\n",
-              tid->sid, tid->pubversion, tid->numsegments);
+      if (!ms_nstime2timestr (tid->earliest, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
+          !ms_nstime2timestr (tid->latest, endtimestr, SEEDORDINAL, NANO_MICRO_NONE))
+      {
+        ms_log (2, "Cannot create time strings\n");
+        starttimestr[0] = endtimestr[0] = '\0';
+      }
+
+      ms_log (0, "TraceID for %s (%d), earliest: %s, latest: %s, segments: %u\n",
+              tid->sid, tid->pubversion, starttimestr, endtimestr, tid->numsegments);
+      uint64_t total = 0;
+      seg            = tid->first;
+      while (seg)
+      {
+        total += seg->numsamples;
+        seg = seg->next;
+      }
+      printf ("estimated samples of this trace: %" PRId64 "\n", total);
 
       seg = tid->first;
       while (seg)
@@ -238,11 +242,13 @@ equal than 100 will create infinite loop\n");
           }
         }
 
+        total += seg->numsamples;
         seg = seg->next;
       }
 
+      printf ("total samples of this trace: %" PRId64 "\n", total);
       /* print the data samples of every trace */
-      printf ("data samples of this trace: %" PRId64 "\n", dataSize);
+      printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, idx);
       /* Calculate the RMS */
       printf ("RMS of this trace: %lf\n", calculateSD (data, dataSize));
       printf ("\n");
