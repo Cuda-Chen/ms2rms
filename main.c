@@ -147,8 +147,8 @@ equal than 100 will create infinite loop\n");
       double *data = NULL;
       uint64_t dataSize;
 
-      if (!ms_nstime2timestr (tid->earliest, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
-          !ms_nstime2timestr (tid->latest, endtimestr, SEEDORDINAL, NANO_MICRO_NONE))
+      if (!ms_nstime2timestr (tid->earliest, starttimestr, ISOMONTHDAY, NANO_MICRO_NONE) ||
+          !ms_nstime2timestr (tid->latest, endtimestr, ISOMONTHDAY, NANO_MICRO_NONE))
       {
         ms_log (2, "Cannot create time strings\n");
         starttimestr[0] = endtimestr[0] = '\0';
