@@ -122,14 +122,6 @@ equal than 100 will create infinite loop\n");
 
     ms3_printselections (&testselection);
 
-    if (!ms_nstime2timestr (starttime + (endtime - starttime) / 2,
-                            timeStampStr, ISOMONTHDAY, NANO))
-    {
-      ms_log (2, "Cannot create time stamp strings\n");
-      return -1;
-    }
-    printf ("Time stamp: %s\n", timeStampStr);
-
     /* Read all miniSEED into a trace list, limiting to time selections */
     rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
                                       &testselection, 0, flags, verbose);
@@ -156,6 +148,15 @@ equal than 100 will create infinite loop\n");
 
       ms_log (0, "TraceID for %s (%d), earliest: %s, latest: %s, segments: %u\n",
               tid->sid, tid->pubversion, starttimestr, endtimestr, tid->numsegments);
+
+      if (!ms_nstime2timestr (tid->earliest + (tid->latest - tid->earliest) / 2,
+                              timeStampStr, ISOMONTHDAY, NONE))
+      {
+        ms_log (2, "Cannot create time stamp strings\n");
+        return -1;
+      }
+      ms_log (0, "Time stamp: %s\n", timeStampStr);
+
       uint64_t total = 0;
       seg            = tid->first;
       while (seg)
