@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -35,6 +36,12 @@ main (int argc, char **argv)
 
   int windowSize;
   int windowOverlap;
+  FILE *fptrRMS;
+  FILE *fptrJSON;
+  char *outputFileRMS;
+  char *outputFileJSON;
+  const char *RMSExtension = ".rms";
+  const char *JSONExtension = ".json";
 
   /* Simplistic argument parsing */
   if (argc != 4)
@@ -42,6 +49,7 @@ main (int argc, char **argv)
     ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
     return -1;
   }
+  /* Get file name without path */
   mseedfile  = argv[1];
   int len    = strlen (mseedfile);
   char *temp = (char *)malloc (sizeof (char) * (len + 1));
@@ -55,7 +63,11 @@ main (int argc, char **argv)
     temp = &temp[strlen (temp) - l + 2];
     ssc  = strstr (temp, "/");
   }
+  size_t tempLen = strlen(temp);
+  printf("temp str size: %ld content: %s\n", tempLen, temp);
+  /* Get window size */
   windowSize    = atoi (argv[2]);
+  /* Get overlap percentage between each window */
   windowOverlap = atoi (argv[3]);
   if (windowSize <= 0)
   {
@@ -68,6 +80,13 @@ main (int argc, char **argv)
 equal than 100 will create infinite loop\n");
     return -1;
   }
+  /* Create output files (.rms and .json) */
+  outputFileRMS = (char *)malloc(sizeof(char) * (1 + tempLen + strlen(RMSExtension)));
+  outputFileJSON = (char *)malloc(sizeof(char) * (1 + tempLen + strlen(JSONExtension)));
+  strcpy(outputFileRMS, temp);
+  strcat(outputFileRMS, RMSExtension);
+  strcpy(outputFileJSON, temp);
+  strcat(outputFileJSON, JSONExtension);
 
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
@@ -92,6 +111,14 @@ equal than 100 will create infinite loop\n");
   printf ("end time of year and yday of the earliest record: %" PRId16 " %" PRId16 "\n", year, yday);
   if (msr)
     msr3_free (&msr);
+
+  /* Open the output files (currently .rms) */
+  fptrRMS = fopen(outputFileRMS, "w");
+  if(fptrRMS == NULL)
+  {
+    printf("Error opening file %s\n", outputFileRMS);
+    return -1;
+  }
 
   /* Loop over the selected segments */
   nstime_t starttime = ms_time2nstime (year, yday, 0, 0, 0, 0);
@@ -156,6 +183,7 @@ equal than 100 will create infinite loop\n");
         return -1;
       }
       ms_log (0, "Time stamp: %s\n", timeStampStr);
+      fprintf(fptrRMS, "%s,", timeStampStr);
 
       uint64_t total = 0;
       seg            = tid->first;
@@ -260,6 +288,9 @@ equal than 100 will create infinite loop\n");
       /* clean up the data array in the end of every trace */
       free (data);
 
+      /* Print a new line in output files */
+      fprintf(fptrRMS, "\n");
+
       tid = tid->next;
     }
 
@@ -272,6 +303,9 @@ equal than 100 will create infinite loop\n");
     if (selections)
       ms3_freeselections (selections);
   }
+
+  /* Close the output files */
+  fclose(fptrRMS);
 
   return 0;
 }

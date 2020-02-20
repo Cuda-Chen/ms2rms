@@ -55,3 +55,7 @@ dkms.conf
 # mseed test case files
 YULB.TW..HHE.2020.035
 YULB.TW..HHZ.2019.001
+
+# output files' extension
+*.rms
+*.json
