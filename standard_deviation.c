@@ -24,6 +24,25 @@ calculateSD (double *data, uint64_t dataSize)
 }
 
 void
+getMeanAndSD (double *data, uint64_t dataSize, double *_mean, double *_SD)
+{
+  double sum = 0.0, mean, SD = 0.0;
+  uint64_t i;
+  for (i = 0; i < dataSize; i++)
+  {
+    sum += data[i];
+  }
+  mean = sum / (double)dataSize;
+  for (i = 0; i < dataSize; i++)
+  {
+    SD += pow (data[i] - mean, 2);
+  }
+  printf ("mean: %lf / %" PRId64 " = %lf\n", sum, dataSize, mean);
+  *_mean = round (mean * 100) / 100;
+  *_SD   = round (sqrt (SD / dataSize) * 100) / 100;
+}
+
+void
 testCalculateSD ()
 {
   double test[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

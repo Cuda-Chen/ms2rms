@@ -40,7 +40,7 @@ main (int argc, char **argv)
   FILE *fptrJSON;
   char *outputFileRMS;
   char *outputFileJSON;
-  const char *RMSExtension = ".rms";
+  const char *RMSExtension  = ".rms";
   const char *JSONExtension = ".json";
 
   /* Simplistic argument parsing */
@@ -63,10 +63,10 @@ main (int argc, char **argv)
     temp = &temp[strlen (temp) - l + 2];
     ssc  = strstr (temp, "/");
   }
-  size_t tempLen = strlen(temp);
-  printf("temp str size: %ld content: %s\n", tempLen, temp);
+  size_t tempLen = strlen (temp);
+  printf ("temp str size: %ld content: %s\n", tempLen, temp);
   /* Get window size */
-  windowSize    = atoi (argv[2]);
+  windowSize = atoi (argv[2]);
   /* Get overlap percentage between each window */
   windowOverlap = atoi (argv[3]);
   if (windowSize <= 0)
@@ -81,12 +81,12 @@ equal than 100 will create infinite loop\n");
     return -1;
   }
   /* Create output files (.rms and .json) */
-  outputFileRMS = (char *)malloc(sizeof(char) * (1 + tempLen + strlen(RMSExtension)));
-  outputFileJSON = (char *)malloc(sizeof(char) * (1 + tempLen + strlen(JSONExtension)));
-  strcpy(outputFileRMS, temp);
-  strcat(outputFileRMS, RMSExtension);
-  strcpy(outputFileJSON, temp);
-  strcat(outputFileJSON, JSONExtension);
+  outputFileRMS  = (char *)malloc (sizeof (char) * (1 + tempLen + strlen (RMSExtension)));
+  outputFileJSON = (char *)malloc (sizeof (char) * (1 + tempLen + strlen (JSONExtension)));
+  strcpy (outputFileRMS, temp);
+  strcat (outputFileRMS, RMSExtension);
+  strcpy (outputFileJSON, temp);
+  strcat (outputFileJSON, JSONExtension);
 
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
@@ -113,10 +113,10 @@ equal than 100 will create infinite loop\n");
     msr3_free (&msr);
 
   /* Open the output files (currently .rms) */
-  fptrRMS = fopen(outputFileRMS, "w");
-  if(fptrRMS == NULL)
+  fptrRMS = fopen (outputFileRMS, "w");
+  if (fptrRMS == NULL)
   {
-    printf("Error opening file %s\n", outputFileRMS);
+    printf ("Error opening file %s\n", outputFileRMS);
     return -1;
   }
 
@@ -183,7 +183,7 @@ equal than 100 will create infinite loop\n");
         return -1;
       }
       ms_log (0, "Time stamp: %s\n", timeStampStr);
-      fprintf(fptrRMS, "%s,", timeStampStr);
+      fprintf (fptrRMS, "%s,", timeStampStr);
 
       uint64_t total = 0;
       seg            = tid->first;
@@ -281,15 +281,19 @@ equal than 100 will create infinite loop\n");
       printf ("total samples of this trace: %" PRId64 "\n", total);
       /* print the data samples of every trace */
       printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
-      /* Calculate the RMS */
-      printf ("Standard deviation of this trace: %lf\n", calculateSD (data, dataSize));
+      /* Calculate the mean and standard deviation */
+      double mean, SD;
+      getMeanAndSD (data, dataSize, &mean, &SD);
+      printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
       printf ("\n");
+      /* Output mean and standard deviation to files */
+      fprintf (fptrRMS, "%.2lf,%2.lf", mean, SD);
 
       /* clean up the data array in the end of every trace */
       free (data);
 
       /* Print a new line in output files */
-      fprintf(fptrRMS, "\n");
+      fprintf (fptrRMS, "\n");
 
       tid = tid->next;
     }
@@ -305,7 +309,7 @@ equal than 100 will create infinite loop\n");
   }
 
   /* Close the output files */
-  fclose(fptrRMS);
+  fclose (fptrRMS);
 
   return 0;
 }
