@@ -49,6 +49,13 @@ main (int argc, char **argv)
   const char *RMSExtension  = ".rms";
   const char *JSONExtension = ".json";
 
+  /* Buffers for storing source id, network, station, location and channel */
+  char sid[LM_SIDLEN];
+  char network[11];
+  char station[11];
+  char location[11];
+  char channel[31];
+
   /* Simplistic argument parsing */
   if (argc != 4)
   {
@@ -107,6 +114,20 @@ equal than 100 will create infinite loop\n");
   nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
   char timeStampStr[30];
 
+  /* Open the output files */
+  fptrRMS  = fopen (outputFileRMS, "w");
+  fptrJSON = fopen (outputFileJSON, "w");
+  if (fptrRMS == NULL)
+  {
+    printf ("Error opening file %s\n", outputFileRMS);
+    return -1;
+  }
+  else if (fptrJSON == NULL)
+  {
+    printf ("Error opening file %s\n", outputFileJSON);
+    return -1;
+  }
+
   /* get the end time of the earliest record */
   MS3Record *msr = 0;
   ms3_readmsr (&msr, mseedfile, NULL, NULL, flags, verbose);
@@ -115,16 +136,23 @@ equal than 100 will create infinite loop\n");
   uint32_t nsec;
   ms_nstime2time (msr3_endtime (msr), &year, &yday, &hour, &min, &sec, &nsec);
   printf ("end time of year and yday of the earliest record: %" PRId16 " %" PRId16 "\n", year, yday);
-  if (msr)
-    msr3_free (&msr);
 
-  /* Open the output files (currently .rms) */
-  fptrRMS = fopen (outputFileRMS, "w");
-  if (fptrRMS == NULL)
+  /* Parse network, station, location and channel from SID */
+  rv = ms_sid2nslc (msr->sid, network, station, location, channel);
+  if (rv)
   {
-    printf ("Error opening file %s\n", outputFileRMS);
+    printf ("Error returned ms_sid2nslc()\n");
     return -1;
   }
+  /* Write network, station, location and channel to output JSON file */
+  fprintf (fptrJSON, "{\"network\":\"%s\", \
+                          \"station\":\"%s\", \
+                          \"location\":\"%s\", \
+                          \"channel\":\"%s\", \
+                          \"data\":[",
+           network, station, location, channel);
+  if (msr)
+    msr3_free (&msr);
 
   /* Loop over the selected segments */
   nstime_t starttime = ms_time2nstime (year, yday, 0, 0, 0, 0);
@@ -182,6 +210,7 @@ equal than 100 will create infinite loop\n");
       ms_log (0, "TraceID for %s (%d), earliest: %s, latest: %s, segments: %u\n",
               tid->sid, tid->pubversion, starttimestr, endtimestr, tid->numsegments);
 
+      /* Create time stamp string */
       if (!ms_nstime2timestr (tid->earliest + (tid->latest - tid->earliest) / 2,
                               timeStampStr, ISOMONTHDAY, NONE))
       {
@@ -189,7 +218,6 @@ equal than 100 will create infinite loop\n");
         return -1;
       }
       ms_log (0, "Time stamp: %s\n", timeStampStr);
-      //fprintf (fptrRMS, "%s,", timeStampStr);
 
       uint64_t total = 0;
       seg            = tid->first;
@@ -292,8 +320,19 @@ equal than 100 will create infinite loop\n");
       getMeanAndSD (data, dataSize, &mean, &SD);
       printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
       printf ("\n");
-      /* Output timestamp, mean and standard deviation to files */
+
+      /* Output timestamp, mean and standard deviation to output files */
       write2RMS (fptrRMS, timeStampStr, mean, SD);
+      if (i == segments - 1)
+      {
+        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"rms\":%.2lf}",
+                 timeStampStr, SD);
+      }
+      else
+      {
+        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"rms\":%.2lf},",
+                 timeStampStr, SD);
+      }
 
       /* clean up the data array in the end of every trace */
       free (data);
@@ -311,8 +350,11 @@ equal than 100 will create infinite loop\n");
       ms3_freeselections (selections);
   }
 
+  fprintf (fptrJSON, "]}");
+
   /* Close the output files */
   fclose (fptrRMS);
+  fclose (fptrJSON);
 
   return 0;
 }
