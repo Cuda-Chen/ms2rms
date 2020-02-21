@@ -50,7 +50,7 @@ main (int argc, char **argv)
   const char *JSONExtension = ".json";
 
   /* Buffers for storing source id, network, station, location and channel */
-  char sid[LM_SIDLEN];
+  //char sid[LM_SIDLEN];
   char network[11];
   char station[11];
   char location[11];
@@ -325,13 +325,13 @@ equal than 100 will create infinite loop\n");
       write2RMS (fptrRMS, timeStampStr, mean, SD);
       if (i == segments - 1)
       {
-        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"rms\":%.2lf}",
-                 timeStampStr, SD);
+        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
+                 timeStampStr, mean, SD);
       }
       else
       {
-        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"rms\":%.2lf},",
-                 timeStampStr, SD);
+        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf},",
+                 timeStampStr, mean, SD);
       }
 
       /* clean up the data array in the end of every trace */

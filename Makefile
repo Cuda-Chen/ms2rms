@@ -3,7 +3,7 @@ DEBUG = 1
 CC = gcc
 EXEC = ms2rms
 COMMON = -I/usr/local/include -I.
-CFLAGS = -Wall
+CFLAGS = -Werror -Wall
 LDFLAGS = -L/usr/local/lib 
 LDLIBS = -lmseed -lm
 
