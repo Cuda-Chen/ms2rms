@@ -15,6 +15,12 @@
 static nstime_t NSECS = 1000000000;
 #define TOKENSIZE 5
 
+static void
+write2RMS (FILE *file, char *timeStampStr, double mean, double SD)
+{
+  fprintf (file, "%s,%.2lf,%.2lf\n", timeStampStr, mean, SD);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -183,7 +189,7 @@ equal than 100 will create infinite loop\n");
         return -1;
       }
       ms_log (0, "Time stamp: %s\n", timeStampStr);
-      fprintf (fptrRMS, "%s,", timeStampStr);
+      //fprintf (fptrRMS, "%s,", timeStampStr);
 
       uint64_t total = 0;
       seg            = tid->first;
@@ -286,14 +292,11 @@ equal than 100 will create infinite loop\n");
       getMeanAndSD (data, dataSize, &mean, &SD);
       printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
       printf ("\n");
-      /* Output mean and standard deviation to files */
-      fprintf (fptrRMS, "%.2lf,%2.lf", mean, SD);
+      /* Output timestamp, mean and standard deviation to files */
+      write2RMS (fptrRMS, timeStampStr, mean, SD);
 
       /* clean up the data array in the end of every trace */
       free (data);
-
-      /* Print a new line in output files */
-      fprintf (fptrRMS, "\n");
 
       tid = tid->next;
     }
