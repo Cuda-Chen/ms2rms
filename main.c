@@ -85,7 +85,9 @@ main (int argc, char **argv)
     ssc  = strstr (temp, "/");
   }
   size_t tempLen = strlen (temp);
+#ifdef DEBUG
   printf ("temp str size: %ld content: %s\n", tempLen, temp);
+#endif
   /* Get window size */
   windowSize = atoi (argv[2]);
   /* Get overlap percentage between each window */
@@ -118,7 +120,9 @@ equal than 100 will create infinite loop\n");
   /* Calculate how many segments of this routine */
   int nextTimeStamp = windowSize - (windowSize * windowOverlap / 100);
   int segments      = SECONDSINDAY / nextTimeStamp;
+#ifdef DEBUG
   printf ("num of segments: %d\n", segments);
+#endif
   nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
   char timeStampStr[30];
 
@@ -143,7 +147,9 @@ equal than 100 will create infinite loop\n");
   uint8_t hour, min, sec;
   uint32_t nsec;
   ms_nstime2time (msr3_endtime (msr), &year, &yday, &hour, &min, &sec, &nsec);
+#ifdef DEBUG
   printf ("end time of year and yday of the earliest record: %" PRId16 " %" PRId16 "\n", year, yday);
+#endif
 
   /* Parse network, station, location and channel from SID */
   rv = ms_sid2nslc (msr->sid, network, station, location, channel);
@@ -153,11 +159,7 @@ equal than 100 will create infinite loop\n");
     return -1;
   }
   /* Write network, station, location and channel to output JSON file */
-  fprintf (fptrJSON, "{\"network\":\"%s\", \
-                          \"station\":\"%s\", \
-                          \"location\":\"%s\", \
-                          \"channel\":\"%s\", \
-                          \"data\":[",
+  fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
            network, station, location, channel);
   if (msr)
     msr3_free (&msr);
@@ -169,7 +171,9 @@ equal than 100 will create infinite loop\n");
   int i;
   for (i = 0; i < segments; i++)
   {
+#ifdef DEBUG
     printf ("index: %d\n", i);
+#endif
     /* Record the time stamp of each time interval */
     nstime_t timeStamp;
 
@@ -192,7 +196,9 @@ equal than 100 will create infinite loop\n");
     testselectime.endtime   = endtime;
     testselectime.next      = NULL;
 
+#ifdef DEBUG
     ms3_printselections (&testselection);
+#endif
 
     /* Read all miniSEED into a trace list, limiting to time selections */
     rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
@@ -218,8 +224,10 @@ equal than 100 will create infinite loop\n");
         starttimestr[0] = endtimestr[0] = '\0';
       }
 
+#ifdef DEBUG
       ms_log (0, "TraceID for %s (%d), earliest: %s, latest: %s, segments: %u\n",
               tid->sid, tid->pubversion, starttimestr, endtimestr, tid->numsegments);
+#endif
 
       /* Create time stamp string */
       timeStamp = tid->earliest + (tid->latest - tid->earliest) / 2;
@@ -234,7 +242,9 @@ equal than 100 will create infinite loop\n");
         ms_log (2, "Cannot create time stamp strings\n");
         return -1;
       }
+#ifdef DEBUG
       ms_log (0, "Time stamp: %s\n", timeStampStr);
+#endif
 
       uint64_t total = 0;
       seg            = tid->first;
@@ -243,8 +253,9 @@ equal than 100 will create infinite loop\n");
         total += seg->samplecnt;
         seg = seg->next;
       }
+#ifdef DEBUG
       printf ("estimated samples of this trace: %" PRId64 "\n", total);
-      //total = 0;
+#endif
 
       seg = tid->first;
 
@@ -268,8 +279,10 @@ equal than 100 will create infinite loop\n");
           starttimestr[0] = endtimestr[0] = '\0';
         }
 
+#ifdef DEBUG
         ms_log (0, "  Segment %s - %s, samples: %" PRId64 ", sample rate: %g\n",
                 starttimestr, endtimestr, seg->samplecnt, seg->samprate);
+#endif
 
         /* Unpack and print samples for this trace segment */
         if (seg->recordlist && seg->recordlist->first)
@@ -329,14 +342,18 @@ equal than 100 will create infinite loop\n");
         seg = seg->next;
       }
 
+#ifdef DEBUG
       printf ("total samples of this trace: %" PRId64 "\n", total);
       /* print the data samples of every trace */
       printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
+#endif
       /* Calculate the mean and standard deviation */
       double mean, SD;
       getMeanAndSD (data, dataSize, &mean, &SD);
+#ifdef DEBUG
       printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
       printf ("\n");
+#endif
 
       /* Record the header information into .rms file */
       if (i == 0)
