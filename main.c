@@ -13,12 +13,20 @@
 #define SECONDSINHOUR 3600
 #define SECONDSINMINUTE 60
 static nstime_t NSECS = 1000000000;
-#define TOKENSIZE 5
 
+/*
 static void
 write2RMS (FILE *file, char *timeStampStr, double mean, double SD)
 {
   fprintf (file, "%s,%.2lf,%.2lf\n", timeStampStr, mean, SD);
+}
+*/
+
+static void
+write2RMS (FILE *file, nstime_t timeStamp, double mean, double SD)
+{
+  int timeStampInSecond = timeStamp / NSECS;
+  fprintf (file, "%d,%.2lf,%.2lf\r\n", timeStampInSecond, mean, SD);
 }
 
 int
@@ -157,10 +165,13 @@ equal than 100 will create infinite loop\n");
   /* Loop over the selected segments */
   nstime_t starttime = ms_time2nstime (year, yday, 0, 0, 0, 0);
   nstime_t endtime   = starttime + (nstime_t) (windowSize * NSECS);
+  nstime_t timeStampFirst;
   int i;
   for (i = 0; i < segments; i++)
   {
     printf ("index: %d\n", i);
+    /* Record the time stamp of each time interval */
+    nstime_t timeStamp;
 
     MS3TraceList *mstl        = NULL;
     MS3TraceID *tid           = NULL;
@@ -211,7 +222,13 @@ equal than 100 will create infinite loop\n");
               tid->sid, tid->pubversion, starttimestr, endtimestr, tid->numsegments);
 
       /* Create time stamp string */
-      if (!ms_nstime2timestr (tid->earliest + (tid->latest - tid->earliest) / 2,
+      timeStamp = tid->earliest + (tid->latest - tid->earliest) / 2;
+      /* Record the time of the first segment */
+      if (i == 0)
+      {
+        timeStampFirst = timeStamp;
+      }
+      if (!ms_nstime2timestr (timeStamp,
                               timeStampStr, ISOMONTHDAY, NONE))
       {
         ms_log (2, "Cannot create time stamp strings\n");
@@ -321,8 +338,22 @@ equal than 100 will create infinite loop\n");
       printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
       printf ("\n");
 
+      /* Record the header information into .rms file */
+      if (i == 0)
+      {
+        char temp[30];
+        if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
+        {
+          ms_log (2, "Cannot create time stamp strings\n");
+          return -1;
+        }
+        fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
+                 temp, station, network, channel, location);
+      }
+
       /* Output timestamp, mean and standard deviation to output files */
-      write2RMS (fptrRMS, timeStampStr, mean, SD);
+      write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD);
+      //write2RMS(fptrRMS, timeStampStr, mean, SD);
       if (i == segments - 1)
       {
         fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
