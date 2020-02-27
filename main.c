@@ -216,6 +216,8 @@ equal than 100 will create infinite loop\n");
       /* allocate the data array of every trace */
       double *data = NULL;
       uint64_t dataSize;
+      /* Record the sampling rate of each trace */
+      double samplingRate;
 
       if (!ms_nstime2timestr (tid->earliest, starttimestr, ISOMONTHDAY, NANO_MICRO_NONE) ||
           !ms_nstime2timestr (tid->latest, endtimestr, ISOMONTHDAY, NANO_MICRO_NONE))
@@ -283,6 +285,7 @@ equal than 100 will create infinite loop\n");
         ms_log (0, "  Segment %s - %s, samples: %" PRId64 ", sample rate: %g\n",
                 starttimestr, endtimestr, seg->samplecnt, seg->samprate);
 #endif
+        samplingRate = seg->samprate;
 
         /* Unpack and print samples for this trace segment */
         if (seg->recordlist && seg->recordlist->first)
@@ -342,19 +345,6 @@ equal than 100 will create infinite loop\n");
         seg = seg->next;
       }
 
-#ifdef DEBUG
-      printf ("total samples of this trace: %" PRId64 "\n", total);
-      /* print the data samples of every trace */
-      printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
-#endif
-      /* Calculate the mean and standard deviation */
-      double mean, SD;
-      getMeanAndSD (data, dataSize, &mean, &SD);
-#ifdef DEBUG
-      printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
-      printf ("\n");
-#endif
-
       /* Record the header information into .rms file */
       if (i == 0)
       {
@@ -367,6 +357,23 @@ equal than 100 will create infinite loop\n");
         fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
                  temp, station, network, channel, location);
       }
+
+#ifdef DEBUG
+      printf ("total samples of this trace: %" PRId64 "\n", total);
+      /* print the data samples of every trace */
+      printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
+#endif
+      /* If total < samplingRate, ignore this trace */
+      if(total < 20 * samplingRate)
+        continue;
+
+      /* Calculate the mean and standard deviation */
+      double mean, SD;
+      getMeanAndSD (data, dataSize, &mean, &SD);
+#ifdef DEBUG
+      printf ("mean: %.2lf standard deviation: %.2lf\n", mean, SD);
+      printf ("\n");
+#endif
 
       /* Output timestamp, mean and standard deviation to output files */
       write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD);

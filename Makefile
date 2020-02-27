@@ -1,4 +1,4 @@
-DEBUG = 0
+DEBUG = 1
 
 CC = gcc
 EXEC = ms2rms
@@ -10,7 +10,7 @@ LDLIBS = -lmseed -lm
 OBJS = main.o standard_deviation.o
 
 ifeq ($(DEBUG), 1)
-CFLAGS += -O0 -g
+CFLAGS += -O0 -g -DDEBUG=1
 endif
 
 .PHONY: all clean
