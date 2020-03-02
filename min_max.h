@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-void getMinMaxAndDemean(double *data, uint64_t dataSize, 
-    double *min, double *max,
-    double *minDemean, double *maxDemdea, double mean);
+void getMinMaxAndDemean (double *data, uint64_t dataSize,
+                         double *min, double *max,
+                         double *minDemean, double *maxDemdea, double mean);
 
 #endif

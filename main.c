@@ -7,8 +7,8 @@
 
 #include "libmseed.h"
 
-#include "standard_deviation.h"
 #include "min_max.h"
+#include "standard_deviation.h"
 
 #define SECONDSINDAY 86400
 #define SECONDSINHOUR 3600
@@ -25,11 +25,11 @@ write2RMS (FILE *file, char *timeStampStr, double mean, double SD)
 
 static void
 write2RMS (FILE *file, nstime_t timeStamp, double mean, double SD,
-    double min, double max, double minDemean, double maxDemean)
+           double min, double max, double minDemean, double maxDemean)
 {
   int timeStampInSecond = timeStamp / NSECS;
   fprintf (file, "%d,%.2lf,%.2lf,%.2lf,%.2lf,%.2lf,%.2lf\r\n", timeStampInSecond, mean, SD,
-    min, max, minDemean, maxDemean);
+           min, max, minDemean, maxDemean);
 }
 
 int
@@ -400,12 +400,12 @@ equal than 100 will create infinite loop\n");
 #endif
       /* Calculate the min and max with all and demain */
       double min, max, minDemean, maxDemean;
-      getMinMaxAndDemean(data, dataSize, &min, &max,
-        &minDemean, &maxDemean, mean);
+      getMinMaxAndDemean (data, dataSize, &min, &max,
+                          &minDemean, &maxDemean, mean);
 
       /* Output timestamp, mean and standard deviation to output files */
       write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD,
-        min, max, minDemean, maxDemean);
+                 min, max, minDemean, maxDemean);
       //write2RMS(fptrRMS, timeStampStr, mean, SD);
       if (i == segments - 1)
       {
