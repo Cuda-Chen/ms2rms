@@ -158,9 +158,6 @@ equal than 100 will create infinite loop\n");
     printf ("Error returned ms_sid2nslc()\n");
     return -1;
   }
-  /* Write network, station, location and channel to output JSON file */
-  fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
-           network, station, location, channel);
   if (msr)
     msr3_free (&msr);
 
@@ -264,6 +261,22 @@ equal than 100 will create infinite loop\n");
       ms_log (0, "Time stamp: %s\n", timeStampStr);
 #endif
 
+      /* Record the header information into .rms and .json file */
+      if (i == 0)
+      {
+        char temp[30];
+        if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
+        {
+          ms_log (2, "Cannot create time stamp strings\n");
+          return -1;
+        }
+        fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
+                 temp, station, network, channel, location);
+
+        fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
+                 network, station, location, channel);
+      }
+
       uint64_t total = 0;
       seg            = tid->first;
       while (seg)
@@ -361,19 +374,6 @@ equal than 100 will create infinite loop\n");
         seg = seg->next;
       }
 
-      /* Record the header information into .rms file */
-      if (i == 0)
-      {
-        char temp[30];
-        if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
-        {
-          ms_log (2, "Cannot create time stamp strings\n");
-          return -1;
-        }
-        fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
-                 temp, station, network, channel, location);
-      }
-
 #ifdef DEBUG
       printf ("total samples of this trace: %" PRId64 "\n", total);
       /* print the data samples of every trace */
@@ -403,6 +403,7 @@ equal than 100 will create infinite loop\n");
       {
         fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
                  timeStampStr, mean, SD);
+        fprintf (fptrJSON, "]}");
       }
       else
       {
@@ -425,8 +426,6 @@ equal than 100 will create infinite loop\n");
     if (selections)
       ms3_freeselections (selections);
   }
-
-  fprintf (fptrJSON, "]}");
 
   /* Close the output files */
   fclose (fptrRMS);
