@@ -4,7 +4,7 @@ CC = gcc
 EXEC = ms2rms
 COMMON = -I./libmseed/ -I.
 CFLAGS =  -Wall
-LDFLAGS = -L./libmseed
+LDFLAGS = -L./libmseed -Wl,-rpath,./libmseed
 LDLIBS = -lmseed -lm
 
 OBJS = main.o standard_deviation.o
@@ -25,4 +25,5 @@ $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
 clean:
+	$(MAKE) -C libmseed/ clean
 	rm -rf $(OBJS) $(EXEC)
