@@ -18,6 +18,7 @@ endif
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
+	$(MAKE) -C libmseed/ shared
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 %.o: %.c
