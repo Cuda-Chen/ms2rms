@@ -385,6 +385,7 @@ equal than 100 will create infinite loop\n");
       /* If total < samplingRate, ignore this trace */
       if (total < 20 * samplingRate)
       {
+        printf ("Number of data of this trace is smaller than 20 * %lf\n", samplingRate);
         /* clean up the data array in the end of every trace */
         free (data);
         tid = tid->next;
