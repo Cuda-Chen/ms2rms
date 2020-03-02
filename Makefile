@@ -2,9 +2,9 @@ DEBUG = 1
 
 CC = gcc
 EXEC = ms2rms
-COMMON = -I/usr/local/include -I.
+COMMON = -I./libmseed/ -I.
 CFLAGS =  -Wall
-LDFLAGS = -L/usr/local/lib 
+LDFLAGS = -L./libmseed
 LDLIBS = -lmseed -lm
 
 OBJS = main.o standard_deviation.o

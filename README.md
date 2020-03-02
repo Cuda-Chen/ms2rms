@@ -2,9 +2,9 @@
 Calculate standard deviation given a time interval of each trace.
 
 # How to Compile
-1. Install [libmseed](https://github.com/iris-edu/libmseed).
-
-2. Type `make` to compile.
+1. Clone this repo by THIS COMMAND: `git clone https://github.com/Cuda-Chen/ms2rms.git --recursive`
+2. Install [libmseed](https://github.com/iris-edu/libmseed).
+3. Type `make` to compile.
 
 # Usage
 ```
