@@ -203,7 +203,23 @@ equal than 100 will create infinite loop\n");
     /* Read all miniSEED into a trace list, limiting to time selections */
     rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
                                       &testselection, 0, flags, verbose);
-    if (rv != MS_NOERROR)
+    if (rv == MS_NOTSEED)
+    {
+#ifdef DEBUG
+      ms_log (1, "Seems this interval has no data or there is no miniSEED data\n");
+#endif
+      starttime += nextTimeStamp_ns;
+      endtime += nextTimeStamp_ns;
+
+      /* Make sure everything is cleaned up */
+      if (mstl)
+        mstl3_free (&mstl, 0);
+      if (selections)
+        ms3_freeselections (selections);
+
+      continue;
+    }
+    else if (rv != MS_NOERROR)
     {
       ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr (rv));
       return -1;
@@ -364,8 +380,13 @@ equal than 100 will create infinite loop\n");
       printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
 #endif
       /* If total < samplingRate, ignore this trace */
-      if(total < 20 * samplingRate)
+      if (total < 20 * samplingRate)
+      {
+        /* clean up the data array in the end of every trace */
+        free (data);
+        tid = tid->next;
         continue;
+      }
 
       /* Calculate the mean and standard deviation */
       double mean, SD;
