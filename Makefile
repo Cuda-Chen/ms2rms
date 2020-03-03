@@ -5,7 +5,7 @@ EXEC = ms2rms
 COMMON = -I./libmseed/ -I.
 CFLAGS =  -Wall
 LDFLAGS = -L./libmseed -Wl,-rpath,./libmseed
-LDLIBS = -lmseed -lm
+LDLIBS = -Wl,-Bstatic -lmseed -Wl,-Bdynamic -lm
 
 OBJS = main.o standard_deviation.o min_max.o
 
@@ -18,7 +18,7 @@ endif
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(MAKE) -C libmseed/ shared
+	$(MAKE) -C libmseed/ static
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 %.o: %.c
