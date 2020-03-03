@@ -15,14 +15,6 @@
 #define SECONDSINMINUTE 60
 static nstime_t NSECS = 1000000000;
 
-/*
-static void
-write2RMS (FILE *file, char *timeStampStr, double mean, double SD)
-{
-  fprintf (file, "%s,%.2lf,%.2lf\n", timeStampStr, mean, SD);
-}
-*/
-
 static void
 write2RMS (FILE *file, nstime_t timeStamp, double mean, double SD,
            double min, double max, double minDemean, double maxDemean)
@@ -181,7 +173,7 @@ equal than 100 will create infinite loop\n");
   nstime_t starttime = ms_time2nstime (year, yday, 0, 0, 0, 0);
   nstime_t endtime   = starttime + (nstime_t) (windowSize * NSECS);
   nstime_t timeStampFirst;
-  int i;
+  int i, counter = 0;
   for (i = 0; i < segments; i++)
   {
 #ifdef DEBUG
@@ -216,7 +208,13 @@ equal than 100 will create infinite loop\n");
     /* Read all miniSEED into a trace list, limiting to time selections */
     rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
                                       &testselection, 0, flags, verbose);
-    if (rv == MS_NOTSEED)
+
+    /* If there are some records in this time window */
+    if (rv == MS_NOERROR)
+    {
+      counter++;
+    }
+    else if (rv == MS_NOTSEED)
     {
 #ifdef DEBUG
       ms_log (1, "Seems this interval has no data or there is no miniSEED data\n");
@@ -232,7 +230,7 @@ equal than 100 will create infinite loop\n");
 
       continue;
     }
-    else if (rv != MS_NOERROR)
+    else
     {
       ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr (rv));
       return -1;
@@ -263,7 +261,7 @@ equal than 100 will create infinite loop\n");
       /* Create time stamp string */
       timeStamp = tid->earliest + (tid->latest - tid->earliest) / 2;
       /* Record the time of the first segment */
-      if (i == 0)
+      if (counter == 1)
       {
         timeStampFirst = timeStamp;
       }
@@ -278,7 +276,7 @@ equal than 100 will create infinite loop\n");
 #endif
 
       /* Record the header information into .rms and .json file */
-      if (i == 0)
+      if (counter == 1)
       {
         char temp[30];
         if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
@@ -295,6 +293,7 @@ equal than 100 will create infinite loop\n");
 
       uint64_t total = 0;
       seg            = tid->first;
+      samplingRate = seg->samprate;
       while (seg)
       {
         total += seg->samplecnt;
@@ -314,6 +313,18 @@ equal than 100 will create infinite loop\n");
         printf ("something wrong when malloc data array\n");
         exit (-1);
       }
+
+      /* If the duration of this trace is smaller than 20 seconds */
+      if (total * samplingRate < 20)
+      {
+        printf ("Number of data of this trace is smaller than 20 * %lf\n", samplingRate);
+        /* ignore this trace */
+        counter--;
+        free (data);
+        tid = tid->next;
+        continue;
+      }
+
       int64_t index = 0;
       total         = 0;
 
@@ -330,7 +341,6 @@ equal than 100 will create infinite loop\n");
         ms_log (0, "  Segment %s - %s, samples: %" PRId64 ", sample rate: %g\n",
                 starttimestr, endtimestr, seg->samplecnt, seg->samprate);
 #endif
-        samplingRate = seg->samprate;
 
         /* Unpack and print samples for this trace segment */
         if (seg->recordlist && seg->recordlist->first)
@@ -396,14 +406,15 @@ equal than 100 will create infinite loop\n");
       printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
 #endif
       /* If total < samplingRate, ignore this trace */
+/*
       if (total < 20 * samplingRate)
       {
         printf ("Number of data of this trace is smaller than 20 * %lf\n", samplingRate);
-        /* clean up the data array in the end of every trace */
+        
         free (data);
         tid = tid->next;
         continue;
-      }
+      }*/
 
       /* Calculate the mean and standard deviation */
       double mean, SD;
