@@ -13,5 +13,15 @@ Where:
 - `time window size`: measured in seconds. It should always bigger than `0`.
 - `window overlap`: measured in percentage. If should always smaller than `100`.
 
+# Output Format
+## .rms
+```
+<time stamp of the first window>,<station>,<network>,<channel>,<location>,<CR><LF>
+<time difference between this window to the first window>,<mean>,<SD>,<min>,<max>,<minDemean>,<maxDemean>,<CR><LF>
+<time difference between this window to the first window>,<mean>,<SD>,<min>,<max>,<minDemean>,<maxDemean>,<CR><LF>
+...
+```
+
 # Note
+It `libmseed` directory is empty run this command in project's root directory:
 `git submodule update --init`

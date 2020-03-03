@@ -32,6 +32,19 @@ write2RMS (FILE *file, nstime_t timeStamp, double mean, double SD,
            min, max, minDemean, maxDemean);
 }
 
+static void
+usage ()
+{
+  printf ("Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
+  printf ("\nOutput format: \n");
+  printf ("\
+<time stamp of the first window>,<station>,<network>,<channel>,<location>,<CR><LF>\n\
+<time difference between this window to the first window>,<mean>,<SD>,<min>,<max>,<minDemean>,<maxDemean>,<CR><LF>\n\
+<time difference between this window to the first window>,<mean>,<SD>,<min>,<max>,<minDemean>,<maxDemean>,<CR><LF>\n\
+...  \
+\n");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -70,7 +83,7 @@ main (int argc, char **argv)
   /* Simplistic argument parsing */
   if (argc != 4)
   {
-    ms_log (2, "Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
+    usage ();
     return -1;
   }
   /* Get file name without path */
