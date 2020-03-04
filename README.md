@@ -23,7 +23,7 @@ Where:
 ```
 
 # Note
-- It `libmseed` directory is empty run this command in project's root directory:
+- If `libmseed` directory is empty run this command in project's root directory:
 `git submodule update --init`
 
 - This program can ONLY accept single channel record.
