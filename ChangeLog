@@ -1,5 +1,6 @@
 2020-03-13:
-	- Move traversing time window utility to seperate files.
+	- Move traversing time window utility to seperate files. Therefore 
+	  remove the corresponding lines in main.c.
 
 2020-03-04: v0.0.1
 	- Release version 0.0.1.
