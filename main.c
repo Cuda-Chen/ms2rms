@@ -28,7 +28,7 @@ main (int argc, char **argv)
   char *outputFileRMS;
   char *outputFileJSON;
   const char *RMSExtension  = ".rms";
-  const char *JSONExtension = ".json"; 
+  const char *JSONExtension = ".json";
 
   /* Simplistic argument parsing */
   if (argc != 4)
@@ -77,8 +77,8 @@ equal than 100 will create infinite loop\n");
   strcpy (outputFileJSON, temp);
   strcat (outputFileJSON, JSONExtension);
 
-  int returnValue = traverseTimeWindow(mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
-  if(returnValue < 0)
+  int returnValue = traverseTimeWindow (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
+  if (returnValue < 0)
   {
     return -1;
   }

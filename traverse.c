@@ -24,8 +24,9 @@ write2RMS (FILE *file, nstime_t timeStamp, double mean, double SD,
            min, max, minDemean, maxDemean);
 }
 
-int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
-                        int windowSize, int windowOverlap)
+int
+traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
+                    int windowSize, int windowOverlap)
 {
   char starttimestr[30];
   char endtimestr[30];
@@ -51,7 +52,6 @@ int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const c
   char station[11];
   char location[11];
   char channel[31];
-
 
   /* Set bit flag to validate CRC */
   flags |= MSF_VALIDATECRC;
@@ -171,7 +171,7 @@ int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const c
     }
 
 #ifdef DEBUG
-    mstl3_printtracelist(mstl, ISOMONTHDAY, 1, 1);
+    mstl3_printtracelist (mstl, ISOMONTHDAY, 1, 1);
 #endif
 
     /* Traverse trace list structures and print summary information */
@@ -231,7 +231,7 @@ int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const c
 
       uint64_t total = 0;
       seg            = tid->first;
-      samplingRate = seg->samprate;
+      samplingRate   = seg->samprate;
       while (seg)
       {
         total += seg->samplecnt;
@@ -344,7 +344,7 @@ int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const c
       printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
 #endif
       /* If total < samplingRate, ignore this trace */
-/*
+      /*
       if (total < 20 * samplingRate)
       {
         printf ("Number of data of this trace is smaller than 20 * %lf\n", samplingRate);
@@ -401,6 +401,67 @@ int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const c
   /* Close the output files */
   fclose (fptrRMS);
   fclose (fptrJSON);
+
+  return 0;
+}
+
+int
+traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
+                           int windowSize, int windowOverlap)
+{
+  char starttimestr[30];
+  char endtimestr[30];
+  uint32_t flags = 0;
+  int8_t verbose = 0;
+  size_t idx;
+  int rv;
+
+  int64_t unpacked;
+  uint8_t samplesize;
+  char sampletype;
+  size_t lineidx;
+  size_t lines;
+  int col;
+  void *sptr;
+
+  FILE *fptrRMS;
+  FILE *fptrJSON;
+
+  /* Buffers for storing source id, network, station, location and channel */
+  //char sid[LM_SIDLEN];
+  char network[11];
+  char station[11];
+  char location[11];
+  char channel[31];
+
+  /* Set bit flag to validate CRC */
+  flags |= MSF_VALIDATECRC;
+
+  /* Set bit flag to build a record list */
+  flags |= MSF_RECORDLIST;
+
+  /* Calculate how many segments of this routine */
+  int nextTimeStamp = windowSize - (windowSize * windowOverlap / 100);
+  int segments      = SECONDSINDAY / nextTimeStamp;
+#ifdef DEBUG
+  printf ("num of segments: %d\n", segments);
+#endif
+  nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
+  char timeStampStr[30];
+
+  /* Open the output files */
+  fptrRMS  = fopen (outputFileRMS, "w");
+  fptrJSON = fopen (outputFileJSON, "w");
+  if (fptrRMS == NULL)
+  {
+    printf ("Error opening file %s\n", outputFileRMS);
+    return -1;
+  }
+  else if (fptrJSON == NULL)
+  {
+    printf ("Error opening file %s\n", outputFileJSON);
+    return -1;
+  }
 
   return 0;
 }
