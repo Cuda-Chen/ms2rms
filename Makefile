@@ -1,4 +1,4 @@
-DEBUG = 0
+DEBUG = 1
 
 CC = gcc
 EXEC = ms2rms
@@ -7,7 +7,7 @@ CFLAGS =  -Wall
 LDFLAGS = -L./libmseed -Wl,-rpath,./libmseed
 LDLIBS = -Wl,-Bstatic -lmseed -Wl,-Bdynamic -lm
 
-OBJS = main.o standard_deviation.o min_max.o
+OBJS = main.o standard_deviation.o min_max.o traverse.o
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -O0 -g -DDEBUG=1
