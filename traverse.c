@@ -170,6 +170,10 @@ int traverseTimeWindow(const char *mseedfile, const char *outputFileRMS, const c
       return -1;
     }
 
+#ifdef DEBUG
+    mstl3_printtracelist(mstl, ISOMONTHDAY, 1, 1);
+#endif
+
     /* Traverse trace list structures and print summary information */
     tid = mstl->traces;
     while (tid)

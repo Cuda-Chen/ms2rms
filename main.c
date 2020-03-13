@@ -7,7 +7,9 @@
 static void
 usage ()
 {
-  printf ("Usage: ./ms2rms <mseedfile> <time window size> <window overlap>\n");
+  printf ("Usage: ./ms2rms <mseedfile> <time window size> <window overlap> [-r]\n\n");
+  printf ("## Options ##\n"
+          " -r        Calculate RMS in the time range of the file\n");
   printf ("\nOutput format: \n");
   printf ("\
 <time stamp of the first window>,<station>,<network>,<channel>,<location>,<CR><LF>\n\
