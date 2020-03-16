@@ -419,6 +419,7 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
   MS3TraceID *tid           = NULL;
   MS3TraceSeg *seg          = NULL;
   MS3Selections *selections = NULL;
+  MS3Tolerance *tolerance   = NULL;
   char *buffer              = NULL;
   struct stat sb            = {0};
   FILE *inputFileHandler    = NULL;
@@ -544,52 +545,74 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
   }
 #endif
 
+  /* Create selections */
+  /* NOTE: MAY SUFFER API CHANGES IN THE FUTURE.*/
   int i, counter = 0;
   char *sidpattern   = "*";
   uint8_t pubversion = 0;
-  endtime            = starttime + nextTimeStamp_ns;
-  /* Create selections */
+  starttime          = endtime - nextTimeStamp_ns;
   for (i = 0; i < segments; i++)
   {
-    rv = ms3_addselect (&selections, sidpattern, starttime, endtime, pubversion);
-    if (rv < 0)
+    MS3Selections *newselections = NULL;
+    MS3SelectTime *newselecttime = NULL;
+
+    /* Allocate new SelectTime struct and populate */
+    newselecttime = (MS3SelectTime *)libmseed_memory.malloc (sizeof (MS3SelectTime));
+    if (newselecttime == NULL)
     {
-      ms_log (2, "Error adding selections\n");
+      ms_log (2, "Error allocating selection time\n");
       return -1;
     }
+    memset (newselecttime, 0, sizeof (MS3SelectTime));
+    newselecttime->starttime = starttime;
+    newselecttime->endtime   = endtime;
+    newselecttime->next      = NULL;
 
-    starttime += nextTimeStamp_ns;
-    endtime += nextTimeStamp_ns;
+    /* Allocate new Selections struct and populate */
+    newselections = (MS3Selections *)libmseed_memory.malloc (sizeof (MS3Selections));
+    if (newselections == NULL)
+    {
+      ms_log (2, "Error allocating selections\n");
+      return -1;
+    }
+    memset (newselections, 0, sizeof (MS3Selections));
+    strncpy (newselections->sidpattern, sidpattern, sizeof (newselections->sidpattern));
+    newselections->sidpattern[sizeof (newselections->sidpattern) - 1] = '\0';
+    newselections->pubversion                                         = pubversion;
+    newselections->timewindows                                        = newselecttime;
+    /* Add new Selections to the beginning of of selections */
+    newselections->next = selections;
+    selections          = newselections;
+
+    starttime -= nextTimeStamp_ns;
+    endtime -= nextTimeStamp_ns;
   }
 
   testPrintSelections (selections);
 
-#if 0
   /* Loop over each time interval */
   for (i = 0; i < segments; i++)
   {
 #ifdef DEBUG
-    printf ("index: %d\n", i)
+    printf ("index: %d\n", i);
 #endif
 
-    /* Record the time stamp of this time interval */
-    nstime_t = timeStamp;
+    /* Read miniSEED data within each time interval from buffer */
+    rv = mstl3_readbuffer_selection (&mstl, buffer, bufferLen,
+                                     splitVer, flags, tolerance,
+                                     selections, verbose);
+    if (rv < 0)
+    {
+      ms_log (2, "Cannot read miniSEED from buffer: %s\n", ms_errorstr (rv));
+      return -1;
+    }
 
-    /* Create selection of this time interval */
-    MS3Selections selections;
-    MS3SelectTime selecttime;
+#ifdef DEBUG
+    mstl3_printtracelist (mstl, ISOMONTHDAY, 1, 1);
+#endif
 
-    selections.sidpattern[0] = '*';
-    selections.sidpattern[1] = '\0';
-    selections.timewindows   = &selecttime;
-    selections.next          = NULL;
-    selections.pubversion    = 0;
-
-    selecttime.starttime = starttime;
-    selecttime.endtime   = starttime + (nstime_t) (windowSize * NSECS);
-    selecttime.next      = NULL;
+    //selections->timewindows = selections->timewindows->next;
   }
-#endif
 
   return 0;
 }
