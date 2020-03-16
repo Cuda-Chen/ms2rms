@@ -77,7 +77,8 @@ equal than 100 will create infinite loop\n");
   strcpy (outputFileJSON, temp);
   strcat (outputFileJSON, JSONExtension);
 
-  int returnValue = traverseTimeWindow (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
+  //int returnValue = traverseTimeWindow (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
+  int returnValue = traverseTimeWindowLimited (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
   if (returnValue < 0)
   {
     return -1;

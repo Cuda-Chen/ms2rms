@@ -24,6 +24,12 @@ write2RMS (FILE *file, nstime_t timeStamp, double mean, double SD,
            min, max, minDemean, maxDemean);
 }
 
+static void
+testPrintSelections (MS3Selections *selections)
+{
+  ms3_printselections (selections);
+}
+
 int
 traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
                     int windowSize, int windowOverlap)
@@ -409,10 +415,21 @@ int
 traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
                            int windowSize, int windowOverlap)
 {
+  MS3TraceList *mstl        = NULL;
+  MS3TraceID *tid           = NULL;
+  MS3TraceSeg *seg          = NULL;
+  MS3Selections *selections = NULL;
+  char *buffer              = NULL;
+  struct stat sb            = {0};
+  FILE *inputFileHandler    = NULL;
+  uint64_t bufferLen        = 0;
   char starttimestr[30];
   char endtimestr[30];
-  uint32_t flags = 0;
-  int8_t verbose = 0;
+  nstime_t starttime;
+  nstime_t endtime;
+  int8_t splitVer = 0;
+  uint32_t flags  = 0;
+  int8_t verbose  = 0;
   size_t idx;
   int rv;
 
@@ -440,15 +457,78 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
   /* Set bit flag to build a record list */
   flags |= MSF_RECORDLIST;
 
+  /* Read input file into buffer */
+  if (!(inputFileHandler = fopen (mseedfile, "rb")))
+  {
+    ms_log (2, "Error opening file %s: %s\n", mseedfile, strerror (errno));
+    return -1;
+  }
+  if (fstat (fileno (inputFileHandler), &sb))
+  {
+    ms_log (2, "Error stating file %s: %s\n", mseedfile, strerror (errno));
+    return -1;
+  }
+  if (!(buffer = (char *)malloc (sb.st_size)))
+  {
+    ms_log (2, "Error allocating buffer of %" PRIsize_t " bytes\n",
+            (sb.st_size >= 0) ? (size_t)sb.st_size : 0);
+    return -1;
+  }
+  if (fread (buffer, sb.st_size, 1, inputFileHandler) != 1)
+  {
+    ms_log (2, "Error reading file %s\n", mseedfile);
+    return -1;
+  }
+  fclose (inputFileHandler);
+  bufferLen = sb.st_size;
+
+  mstl = mstl3_init (NULL);
+  if (!mstl)
+  {
+    ms_log (2, "Error allocating MS3TraceList\n");
+    return -1;
+  }
+  /* Read all miniSEED in buffer, accumulate in MS3TraceList */
+  rv = mstl3_readbuffer (&mstl, buffer, bufferLen,
+                         splitVer, flags, NULL, verbose);
+  if (rv < 0)
+  {
+    ms_log (2, "Error reading miniSEED record from buffer: %s\n", ms_errorstr (rv));
+    return -1;
+  }
+
+  /* Get the start time and end time of this buffer */
+  starttime = mstl->traces->earliest;
+  endtime   = mstl->last->latest;
+  printf ("starttime: %s endtime: %s\n",
+          ms_nstime2timestr (starttime, starttimestr, ISOMONTHDAY, NANO),
+          ms_nstime2timestr (endtime, endtimestr, ISOMONTHDAY, NANO));
+
+  /* Get source ID and parse network, station, location and channel */
+  rv = ms_sid2nslc (mstl->traces->sid, &network, &station, &location, &channel);
+  if (rv < 0)
+  {
+    ms_log (2, "Error parsing source ID\n");
+    return -1;
+  }
+
+  /* Clean up trace list */
+  if (mstl)
+  {
+    mstl3_free (&mstl, 0);
+  }
+
   /* Calculate how many segments of this routine */
   int nextTimeStamp = windowSize - (windowSize * windowOverlap / 100);
-  int segments      = SECONDSINDAY / nextTimeStamp;
+  int segments      = (endtime - starttime) / NSECS / nextTimeStamp;
 #ifdef DEBUG
   printf ("num of segments: %d\n", segments);
 #endif
   nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
   char timeStampStr[30];
+  nstime_t timeStampFirst;
 
+#if 0
   /* Open the output files */
   fptrRMS  = fopen (outputFileRMS, "w");
   fptrJSON = fopen (outputFileJSON, "w");
@@ -462,6 +542,54 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
     printf ("Error opening file %s\n", outputFileJSON);
     return -1;
   }
+#endif
+
+  int i, counter = 0;
+  char *sidpattern   = "*";
+  uint8_t pubversion = 0;
+  endtime            = starttime + nextTimeStamp_ns;
+  /* Create selections */
+  for (i = 0; i < segments; i++)
+  {
+    rv = ms3_addselect (&selections, sidpattern, starttime, endtime, pubversion);
+    if (rv < 0)
+    {
+      ms_log (2, "Error adding selections\n");
+      return -1;
+    }
+
+    starttime += nextTimeStamp_ns;
+    endtime += nextTimeStamp_ns;
+  }
+
+  testPrintSelections (selections);
+
+#if 0
+  /* Loop over each time interval */
+  for (i = 0; i < segments; i++)
+  {
+#ifdef DEBUG
+    printf ("index: %d\n", i)
+#endif
+
+    /* Record the time stamp of this time interval */
+    nstime_t = timeStamp;
+
+    /* Create selection of this time interval */
+    MS3Selections selections;
+    MS3SelectTime selecttime;
+
+    selections.sidpattern[0] = '*';
+    selections.sidpattern[1] = '\0';
+    selections.timewindows   = &selecttime;
+    selections.next          = NULL;
+    selections.pubversion    = 0;
+
+    selecttime.starttime = starttime;
+    selecttime.endtime   = starttime + (nstime_t) (windowSize * NSECS);
+    selecttime.next      = NULL;
+  }
+#endif
 
   return 0;
 }
