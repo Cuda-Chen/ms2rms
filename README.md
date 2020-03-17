@@ -28,3 +28,5 @@ Where:
 
 - This program can ONLY accept single channel record.
 Multiple channels result in incorrect output.
+
+- The `rms` and `mean` value are rounded to hundrendth place.

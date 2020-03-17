@@ -1,3 +1,6 @@
+2020-03-17:
+	- Add NOTE about output precision.
+
 2020-03-13:
 	- Move traversing time window utility to seperate files. Therefore 
 	  remove the corresponding lines in main.c.
