@@ -28,5 +28,5 @@ $(EXEC): $(OBJS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
 clean:
-	$(MAKE) -C libmseed/ clean
+	#$(MAKE) -C libmseed/ clean
 	rm -rf $(OBJS) $(EXEC)
