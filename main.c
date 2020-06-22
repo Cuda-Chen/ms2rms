@@ -11,7 +11,9 @@ usage ()
   printf ("## Options ##\n"
           " mseedfile         input miniSEED file\n"
           " time window size  desired time window size, measured in seconds\n"
-          " window overlap    overlap percentage between each window\n");
+          "                   and the value should always bigger than 0\n"
+          " window overlap    overlap percentage between each window\n"
+          "                   and the value should always samller than 100\n");
   printf ("\nOutput format: \n");
   printf ("\
 <time stamp of the first window>,<station>,<network>,<channel>,<location>,<CR><LF>\n\

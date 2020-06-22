@@ -11,7 +11,7 @@ $ ./ms2rms [mseedfile] [time window size] [window overlap]
 ```
 Where:
 - `time window size`: measured in seconds. It should always bigger than `0`.
-- `window overlap`: measured in percentage. If should always smaller than `100`.
+- `window overlap`: measured in percentage. It should always smaller than `100`.
 
 # Output Format
 ## .rms
