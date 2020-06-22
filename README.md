@@ -7,7 +7,7 @@ Calculate standard deviation given a time interval of each trace.
 
 # Usage
 ```
-$ ./ms2rms <mseedfile> <time window size> <window overlap>
+$ ./ms2rms [mseedfile] [time window size] [window overlap]
 ```
 Where:
 - `time window size`: measured in seconds. It should always bigger than `0`.
@@ -23,10 +23,6 @@ Where:
 ```
 
 # Note
-- If `libmseed` directory is empty run this command in project's root directory:
-`git submodule update --init`
-
 - This program can ONLY accept single channel record.
 Multiple channels result in incorrect output.
-
 - The `rms` and `mean` value are rounded to hundrendth place.
