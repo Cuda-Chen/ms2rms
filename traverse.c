@@ -202,13 +202,16 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
               tid->sid, tid->pubversion, starttimestr, endtimestr, tid->numsegments);
 #endif
 
-      /* Create time stamp string */
+      /* Get the time stamp of this interval */
       timeStamp = tid->earliest + (tid->latest - tid->earliest) / 2;
-      /* Record the time of the first segment */
+
+      /* Record the time of the first segment, used by RMS file */
       if (counter == 1)
       {
         timeStampFirst = timeStamp;
       }
+
+      /* Create time stamp string */
       if (!ms_nstime2timestr (timeStamp,
                               timeStampStr, ISOMONTHDAY, NONE))
       {
@@ -220,7 +223,7 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
 #endif
 
       /* Record the header information into .rms and .json file */
-      if (counter == 1)
+      /*if (counter == 1)
       {
         char temp[30];
         if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
@@ -233,7 +236,7 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
 
         fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
                  network, station, location, channel);
-      }
+      }*/
 
       uint64_t total = 0;
       seg            = tid->first;
@@ -267,6 +270,21 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
         free (data);
         tid = tid->next;
         continue;
+      }
+
+      if (counter == 1)
+      {
+        char temp[30];
+        if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
+        {
+          ms_log (2, "Cannot create time stamp strings\n");
+          return -1;
+        }
+        fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
+                 temp, station, network, channel, location);
+
+        fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
+                 network, station, location, channel);
       }
 
       int64_t index = 0;
@@ -376,17 +394,17 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
       write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD,
                  min, max, minDemean, maxDemean);
       //write2RMS(fptrRMS, timeStampStr, mean, SD);
-      if (i == segments - 1)
+      /*if (i == segments - 1)
       {
         fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
                  timeStampStr, mean, SD);
         fprintf (fptrJSON, "]}");
       }
       else
-      {
-        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf},",
-                 timeStampStr, mean, SD);
-      }
+      {*/
+      fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf},",
+               timeStampStr, mean, SD);
+      //}
 
       /* clean up the data array in the end of every trace */
       free (data);
@@ -403,6 +421,8 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
     if (selections)
       ms3_freeselections (selections);
   }
+
+  fprintf (fptrJSON, "]}");
 
   /* Close the output files */
   fclose (fptrRMS);
