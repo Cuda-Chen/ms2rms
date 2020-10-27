@@ -53,7 +53,6 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
   FILE *fptrJSON;
 
   /* Buffers for storing source id, network, station, location and channel */
-  //char sid[LM_SIDLEN];
   char network[11];
   char station[11];
   char location[11];
@@ -222,22 +221,6 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
       ms_log (0, "Time stamp: %s\n", timeStampStr);
 #endif
 
-      /* Record the header information into .rms and .json file */
-      /*if (counter == 1)
-      {
-        char temp[30];
-        if (!ms_nstime2timestr (timeStamp, temp, SEEDORDINAL, NONE))
-        {
-          ms_log (2, "Cannot create time stamp strings\n");
-          return -1;
-        }
-        fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
-                 temp, station, network, channel, location);
-
-        fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
-                 network, station, location, channel);
-      }*/
-
       uint64_t total = 0;
       seg            = tid->first;
       samplingRate   = seg->samprate;
@@ -367,16 +350,6 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
       /* print the data samples of every trace */
       printf ("data samples of this trace: %" PRId64 " index: %" PRId64 "\n", dataSize, index);
 #endif
-      /* If total < samplingRate, ignore this trace */
-      /*
-      if (total < 20 * samplingRate)
-      {
-        printf ("Number of data of this trace is smaller than 20 * %lf\n", samplingRate);
-        
-        free (data);
-        tid = tid->next;
-        continue;
-      }*/
 
       /* Calculate the mean and standard deviation */
       double mean, SD;
@@ -393,22 +366,13 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
       /* Output timestamp, mean and standard deviation to output files */
       write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD,
                  min, max, minDemean, maxDemean);
-      //write2RMS(fptrRMS, timeStampStr, mean, SD);
-      /*if (i == segments - 1)
-      {
-        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
-                 timeStampStr, mean, SD);
-        fprintf (fptrJSON, "]}");
-      }
-      else
-      {*/
+
       if (counter == 1)
         fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
                  timeStampStr, mean, SD);
       else
         fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
                  timeStampStr, mean, SD);
-      //}
 
       /* clean up the data array in the end of every trace */
       free (data);

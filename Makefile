@@ -1,4 +1,4 @@
-DEBUG = 1
+DEBUG = 0
 
 CC = gcc
 EXEC = ms2rms
