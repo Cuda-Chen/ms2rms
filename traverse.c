@@ -402,8 +402,12 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
       }
       else
       {*/
-      fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf},",
-               timeStampStr, mean, SD);
+      if (counter == 1)
+        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
+                 timeStampStr, mean, SD);
+      else
+        fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
+                 timeStampStr, mean, SD);
       //}
 
       /* clean up the data array in the end of every trace */
