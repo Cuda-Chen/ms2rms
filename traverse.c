@@ -244,11 +244,10 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
         exit (-1);
       }
 
-      /* If the duration of this trace is smaller than 20 seconds */
+      /* If the duration of this trace is smaller than 20 seconds ignore this trace */
       if (total * samplingRate < 20)
       {
         printf ("Number of data of this trace is smaller than 20 * %lf\n", samplingRate);
-        /* ignore this trace */
         counter--;
         free (data);
         tid = tid->next;
@@ -368,10 +367,10 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
                  min, max, minDemean, maxDemean);
 
       if (counter == 1)
-        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
+        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
                  timeStampStr, mean, SD);
       else
-        fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf}",
+        fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
                  timeStampStr, mean, SD);
 
       /* clean up the data array in the end of every trace */
