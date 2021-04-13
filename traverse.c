@@ -368,10 +368,10 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
 
       if (counter == 1)
         fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
-                 timeStampStr, mean, SD);
+                 timeStampStr, mean, SD, min, max, minDemean, maxDemean);
       else
         fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
-                 timeStampStr, mean, SD);
+                 timeStampStr, mean, SD, min, max, minDemean, maxDemean);
 
       /* clean up the data array in the end of every trace */
       free (data);
