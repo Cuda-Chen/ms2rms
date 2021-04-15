@@ -10,11 +10,15 @@ Calculate standard deviation given a time interval of each trace.
 
 # Usage
 ```
-$ ./ms2rms [mseedfile] [time window size] [window overlap]
+$ ./ms2rms [mseedfile] [time window size] [window overlap] [a|r|j]
 ```
 Where:
 - `time window size`: measured in seconds. It should always bigger than `0`.
 - `window overlap`: measured in percentage. It should always smaller than `100`.
+- `a|r|j`: indicate output file format.
+    - r: rms only
+    - j: json only
+    - a: rms and json
 
 # Output Format
 ## .rms

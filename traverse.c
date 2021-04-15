@@ -32,7 +32,7 @@ testPrintSelections (MS3Selections *selections)
 
 int
 traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
-                    int windowSize, int windowOverlap)
+                    int windowSize, int windowOverlap, int outputFormatFlag)
 {
   char starttimestr[30];
   char endtimestr[30];
@@ -74,17 +74,23 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
   char timeStampStr[30];
 
   /* Open the output files */
-  fptrRMS  = fopen (outputFileRMS, "w");
-  fptrJSON = fopen (outputFileJSON, "w");
-  if (fptrRMS == NULL)
+  if (outputFormatFlag == 1 || outputFormatFlag == 0)
   {
-    printf ("Error opening file %s\n", outputFileRMS);
-    return -1;
+    fptrRMS = fopen (outputFileRMS, "w");
+    if (fptrRMS == NULL)
+    {
+      printf ("Error opening file %s\n", outputFileRMS);
+      return -1;
+    }
   }
-  else if (fptrJSON == NULL)
+  if (outputFormatFlag == 2 || outputFormatFlag == 0)
   {
-    printf ("Error opening file %s\n", outputFileJSON);
-    return -1;
+    fptrJSON = fopen (outputFileJSON, "w");
+    if (fptrJSON == NULL)
+    {
+      printf ("Error opening file %s\n", outputFileJSON);
+      return -1;
+    }
   }
 
   /* get the end time of the earliest record */
@@ -254,6 +260,7 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
         continue;
       }
 
+      /* The beginning of the output file */
       if (counter == 1)
       {
         char temp[30];
@@ -262,11 +269,12 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
           ms_log (2, "Cannot create time stamp strings\n");
           return -1;
         }
-        fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
-                 temp, station, network, channel, location);
-
-        fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
-                 network, station, location, channel);
+        if (outputFormatFlag == 1 || outputFormatFlag == 0)
+          fprintf (fptrRMS, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\r\n",
+                   temp, station, network, channel, location);
+        if (outputFormatFlag == 2 || outputFormatFlag == 0)
+          fprintf (fptrJSON, "{\"network\":\"%s\",\"station\":\"%s\",\"location\":\"%s\",\"channel\":\"%s\",\"data\":[",
+                   network, station, location, channel);
       }
 
       int64_t index = 0;
@@ -363,15 +371,19 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
                           &minDemean, &maxDemean, mean);
 
       /* Output timestamp, mean and standard deviation to output files */
-      write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD,
-                 min, max, minDemean, maxDemean);
+      if (outputFormatFlag == 1 || outputFormatFlag == 0)
+        write2RMS (fptrRMS, timeStamp - timeStampFirst, mean, SD,
+                   min, max, minDemean, maxDemean);
 
-      if (counter == 1)
-        fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
-                 timeStampStr, mean, SD, min, max, minDemean, maxDemean);
-      else
-        fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
-                 timeStampStr, mean, SD, min, max, minDemean, maxDemean);
+      if (outputFormatFlag == 2 || outputFormatFlag == 0)
+      {
+        if (counter == 1)
+          fprintf (fptrJSON, "{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
+                   timeStampStr, mean, SD, min, max, minDemean, maxDemean);
+        else
+          fprintf (fptrJSON, ",{\"timestamp\":\"%s\",\"mean\":%.2lf,\"rms\":%.2lf,\"min\":%.2lf,\"max\":%.2lf,\"minDemean\":%.2lf,\"maxDemean\":%.2lf}",
+                   timeStampStr, mean, SD, min, max, minDemean, maxDemean);
+      }
 
       /* clean up the data array in the end of every trace */
       free (data);
@@ -389,22 +401,26 @@ traverseTimeWindow (const char *mseedfile, const char *outputFileRMS, const char
       ms3_freeselections (selections);
   }
 
-  fprintf (fptrJSON, "]}");
+  if (outputFormatFlag == 2 || outputFormatFlag == 0)
+    fprintf (fptrJSON, "]}");
 
   /* Close the output files */
-  fclose (fptrRMS);
-  fclose (fptrJSON);
+  if (outputFormatFlag == 1 || outputFormatFlag == 0)
+    fclose (fptrRMS);
+  if (outputFormatFlag == 2 || outputFormatFlag == 0)
+    fclose (fptrJSON);
 
   return 0;
 }
 
+/* Function of testing libmseed selection feature. DO NOT USE IT. */
 int
 traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, const char *outputFileJSON,
                            int windowSize, int windowOverlap)
 {
-  MS3TraceList *mstl        = NULL;
-  MS3TraceID *tid           = NULL;
-  MS3TraceSeg *seg          = NULL;
+  MS3TraceList *mstl = NULL;
+  /*MS3TraceID *tid           = NULL;
+  MS3TraceSeg *seg          = NULL;*/
   MS3Selections *selections = NULL;
   MS3Tolerance *tolerance   = NULL;
   char *buffer              = NULL;
@@ -418,10 +434,10 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
   int8_t splitVer = 0;
   uint32_t flags  = 0;
   int8_t verbose  = 0;
-  size_t idx;
+  /*size_t idx;*/
   int rv;
 
-  int64_t unpacked;
+  /*int64_t unpacked;
   uint8_t samplesize;
   char sampletype;
   size_t lineidx;
@@ -430,7 +446,7 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
   void *sptr;
 
   FILE *fptrRMS;
-  FILE *fptrJSON;
+  FILE *fptrJSON;*/
 
   /* Buffers for storing source id, network, station, location and channel */
   //char sid[LM_SIDLEN];
@@ -493,7 +509,7 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
           ms_nstime2timestr (endtime, endtimestr, ISOMONTHDAY, NANO));
 
   /* Get source ID and parse network, station, location and channel */
-  rv = ms_sid2nslc (mstl->traces->sid, &network, &station, &location, &channel);
+  rv = ms_sid2nslc (mstl->traces->sid, network, station, location, channel);
   if (rv < 0)
   {
     ms_log (2, "Error parsing source ID\n");
@@ -513,8 +529,8 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
   printf ("num of segments: %d\n", segments);
 #endif
   nstime_t nextTimeStamp_ns = nextTimeStamp * NSECS;
-  char timeStampStr[30];
-  nstime_t timeStampFirst;
+  /*char timeStampStr[30];
+  nstime_t timeStampFirst;*/
 
 #if 0
   /* Open the output files */
@@ -534,7 +550,8 @@ traverseTimeWindowLimited (const char *mseedfile, const char *outputFileRMS, con
 
   /* Create selections */
   /* NOTE: MAY SUFFER API CHANGES IN THE FUTURE.*/
-  int i, counter = 0;
+  int i;
+  /*int counter = 0;*/
   char *sidpattern   = "*";
   uint8_t pubversion = 0;
   starttime          = endtime - nextTimeStamp_ns;

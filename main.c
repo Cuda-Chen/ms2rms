@@ -7,14 +7,19 @@
 static void
 usage ()
 {
-  printf ("Usage: ./ms2rms [mseedfile] [time window size] [window overlap]\n\n");
+  printf ("Usage: ./ms2rms [mseedfile] [time window size] [window overlap] [a|r|j]\n\n");
   printf ("## Options ##\n"
           " mseedfile         input miniSEED file\n"
           " time window size  desired time window size, measured in seconds\n"
           "                   and the value should always bigger than 0\n"
           " window overlap    overlap percentage between each window\n"
-          "                   and the value should always samller than 100\n");
-  printf ("\nOutput format: \n");
+          "                   and the value should always samller than 100\n"
+          " a|r|j             output format indicator\n"
+          "                   the flag is described as follows:\n"
+          "                   a: all (rms and json)\n"
+          "                   r: only rms\n"
+          "                   j: only json\n");
+  printf ("\nOutput format (rms): \n");
   printf ("\
 <time stamp of the first window>,<station>,<network>,<channel>,<location>,<CR><LF>\n\
 <time difference between this window to the first window>,<mean>,<SD>,<min>,<max>,<minDemean>,<maxDemean>,<CR><LF>\n\
@@ -33,9 +38,10 @@ main (int argc, char **argv)
   char *outputFileJSON;
   const char *RMSExtension  = ".rms";
   const char *JSONExtension = ".json";
+  int outputFormatFlag;
 
   /* Simplistic argument parsing */
-  if (argc != 4)
+  if (argc != 5)
   {
     usage ();
     return -1;
@@ -80,8 +86,15 @@ equal than 100 will create infinite loop\n");
   strcat (outputFileRMS, RMSExtension);
   strcpy (outputFileJSON, temp);
   strcat (outputFileJSON, JSONExtension);
+  /* Get output file format indicator */
+  if (strcmp (argv[4], "a") == 0)
+    outputFormatFlag = 0;
+  else if (strcmp (argv[4], "r") == 0)
+    outputFormatFlag = 1;
+  else if (strcmp (argv[4], "j") == 0)
+    outputFormatFlag = 2;
 
-  int returnValue = traverseTimeWindow (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
+  int returnValue = traverseTimeWindow (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap, outputFormatFlag);
   //int returnValue = traverseTimeWindowLimited (mseedfile, outputFileRMS, outputFileJSON, windowSize, windowOverlap);
   if (returnValue < 0)
   {
